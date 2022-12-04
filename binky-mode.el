@@ -337,6 +337,7 @@ If it is 0, then disable the highlight feature."
 ;;   (interactive)
 ;;   )
 
+;;;###autoload
 (define-minor-mode binky-mode
   "Toggle `binky-mode'.
 This global minor mode allows you to easily jump between buffers
