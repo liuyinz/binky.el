@@ -118,28 +118,28 @@ If nil, disable preview, unless \\[help] is pressed."
   :group 'binky)
 
 (defcustom binky-preview-column
-  '((mark     .  5)
+  '((mark     .  6)
     (name     .  26)
-    (position .  12)
+    (line     .  10)
     (mode     .  22)
     (context  .  nil))
   "List of pairs (COLUMN . LENGTH) to display in binky preview.
 COLUMN is one of five parameters of record, listed in `binky-alist'
 and `binky-auto-alist'.
 
-The `mark' represents mark.
-The `name' represents buffer name of file name.
-The `position' represents position.
-The `mode' represents major mode.
-The `context' represents substring of line where the position on.
+The `mark' is column to show mark.
+The `name' is column to show buffer or file name.
+The `line' is column to show line number.
+The `mode' is column to show major mode.
+The `context' is column to show line content.
 
-LENGTH is a number represets COLUMN width.  If LENGTH is nil, then COLUMN would
+LENGTH is a number for COLUMN width.  If LENGTH is nil, then COLUMN would
 not be truncated.  Usually, `context' column should be at the end and not
 truncated."
   :type '(alist
           :key-type symbol
           :value-type '(choice number (const :tag "No limit for last column" nil))
-          :options '(mark name position mode context))
+          :options '(mark name line mode context))
   :group 'binky)
 
 (defcustom binky-preview-ellipsis ".."
@@ -173,32 +173,32 @@ If nil, do not highlight jumping behavior."
   "Face used to highlight the header in preview buffer."
   :group 'binky)
 
-(defface binky-preview-mark-auto
+(defface binky-preview-column-mark-auto
   '((t :inherit font-lock-function-name-face :bold t))
   "Face used to highlight the auto mark of record in preview buffer."
   :group 'binky)
 
-(defface binky-preview-mark-back
+(defface binky-preview-column-mark-back
   '((t :inherit font-lock-type-face :bold t))
   "Face used to highlight the back mark of record in preview buffer."
   :group 'binky)
 
-(defface binky-preview-mark
+(defface binky-preview-column-mark
   '((t :inherit font-lock-variable-name-face :bold t))
   "Face used to highlight the mark of record in preview buffer."
   :group 'binky)
 
-(defface binky-preview-name
+(defface binky-preview-column-name
   '((t :inherit default))
   "Face used to highlight the name of record in preview buffer."
   :group 'binky)
 
-(defface binky-preview-position
+(defface binky-preview-column-line
   '((t :inherit font-lock-keyword-face))
-  "Face used to highlight the position of record in preview buffer."
+  "Face used to highlight the line number of record in preview buffer."
   :group 'binky)
 
-(defface binky-preview-mode
+(defface binky-preview-column-mode
   '((t :inherit font-lock-type-face))
   "Face used to highlight the major mode of record in preview buffer."
   :group 'binky)
@@ -213,8 +213,8 @@ If nil, do not highlight jumping behavior."
 (defvar binky-alist nil
   "List of records (MARK . INFO) set and updated by mannual.
 MARK is a printable character between !(33) - ~(126).
-INFO is a marker or a list of form (filename position major-mode context) use
-to stores point information.")
+INFO is a marker or a list of form (filename line major-mode context position)
+use to stores point information.")
 
 (defvar binky-auto-alist nil
   "Alist of records (MARK . MARKER), set and updated automatically.")
@@ -280,15 +280,16 @@ ARGS format is as same as `format' command."
   (or (buffer-local-value 'binky-frequency (marker-buffer marker)) 0))
 
 (defun binky--record-get-info (record)
-  "Return a list (name position mode context) of information from RECORD."
+  "Return a list (name line mode context position) of information from RECORD."
   (let ((marker (cdr record)))
     (with-current-buffer (marker-buffer marker)
       (list (or buffer-file-name (buffer-name) "")
-            (marker-position marker)
+            (line-number-at-pos)
             major-mode
             (save-excursion
               (goto-char marker)
-              (buffer-substring (pos-bol) (pos-eol)))))))
+              (buffer-substring (pos-bol) (pos-eol)))
+            (marker-position marker)))))
 
 (defun binky-record-auto-update ()
   "Update `binky-auto-alist' and `binky-back-record' automatically."
@@ -371,19 +372,19 @@ ARGS format is as same as `format' command."
     (or killed (setq record (cons (car record) (binky--record-get-info record))))
     (cl-mapcar
      (lambda (x y)
-       (let ((column-face (intern (concat "binky-preview-" (symbol-name x))))
+       (let ((column-face (intern (concat "binky-preview-column-" (symbol-name x))))
              (cond-face (cond
                          (killed 'binky-preview-shadow)
                          ((and (eq x 'mark)
                                (memq (binky--mark-type (string-to-char (substring y -1))) '(auto back)))
-                          (intern (concat "binky-preview-mark-"
+                          (intern (concat "binky-preview-column-mark-"
                                           (symbol-name (binky--mark-type
                                                         (string-to-char (substring y -1)))))))
                          (t nil))))
          (cons x (if (or killed (facep column-face))
                      (propertize y 'face (or cond-face column-face))
                    y))))
-     '(mark name position mode context)
+     '(mark name line mode context)
      (list (concat "  " (single-key-description (nth 0 record)))
            (file-name-nondirectory (nth 1 record))
            (number-to-string (nth 2 record))
@@ -500,7 +501,8 @@ popup the window on the bottom."
             (progn
               (switch-to-buffer (marker-buffer info))
               (goto-char info))
-          (find-file (car info)))
+          (find-file (car info))
+          (goto-char (car (last info))))
         (when (and (numberp binky-jump-highlight-duration)
                    (> binky-jump-highlight-duration 0))
           (binky--jump-highlight)))
