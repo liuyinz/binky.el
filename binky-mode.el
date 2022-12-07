@@ -8,7 +8,7 @@
 ;; Keywords: convenience
 ;; Homepage: https://github.com/liuyinz/binky-mode
 
-;; This file is not a part of GNU Emacsl.
+;; This file is not a part of GNU Emacs.
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
 ;; This package provides commands to jump between points in buffers and files.
 ;; Marked position, last jump position and recent buffers are all supported in
 ;; same mechanism like `point-to-register' and `register-to-point' but with an
-;; inhanced experience.
+;; enhanced experience.
 
 ;;; Code:
 

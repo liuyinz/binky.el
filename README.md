@@ -7,7 +7,7 @@ Jump between points like a rabbit !
 
 This package provides commands to jump between points in buffers and files.
 Marked position, last jump position and recent buffers are all supported in
-same mechanism like `point-to-register` but with an inhanced experience.
+same mechanism like `point-to-register` but with an enhanced experience.
 
 <!-- markdown-toc start -->
 
