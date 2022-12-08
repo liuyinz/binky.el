@@ -71,7 +71,7 @@ Run with `M-x` `binky-add` `binky-delete` `binky-jump` `binky-binky`
 - One command `binky-binky` to rule all
   - [x] add
   - [x] jump
-  - [ ] delete
+  - [x] delete
 
 ## Todo
 

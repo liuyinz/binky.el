@@ -45,17 +45,17 @@
   :link '(url-link :tag "Repository" "https://github.com/liuyinz/binky-mode"))
 
 (defcustom binky-mark-back ?,
-  "Character used to record position before `binky-jump'.
-If nil, disable the feature."
+  "Character used as mark to record last position before call `binky-jump'.
+Any self-inserting character between ! (33) - ~ (126) is allowed to used as
+mark.  Letters, digits, punctuation, etc.  If nil, disable the feature."
   :type '(choice character (const :tag "Disable back mark" nil))
   :group 'binky)
 
 (defcustom binky-mark-auto
   '(?1 ?2 ?3 ?4 ?5 ?6 ?7 ?8 ?9 ?0)
   "List of printable characters to record recent used buffers.
-Any self-inserting character between !(33) - ~(126) is allowed to used as
-marks.  Letters, digits, punctuation, etc.
-If nil, disable the feature."
+Any self-inserting character between ! (33) - ~ (126) is allowed to used as
+marks.  Letters, digits, punctuation, etc.  If nil, disable the feature."
   :type '(choice (repeat (choice (character :tag "Printable character as mark")))
                  (const :tag "Disable auto marks" nil))
   :group 'binky)
@@ -111,7 +111,7 @@ and that must return non-nil to exclude it."
   :type '(repeat function)
   :group 'binky)
 
-(defcustom binky-preview-delay 0.3
+(defcustom binky-preview-delay 0.5
   "If non-nil, time to wait in seconds before popping up a preview window.
 If nil, disable preview, unless \\[help] is pressed."
   :type '(choice number (const :tag "No preview unless requested" nil))
@@ -126,7 +126,7 @@ If nil, disable preview, unless \\[help] is pressed."
   :group 'binky)
 
 (defcustom binky-preview-column
-  '((mark    8   4)
+  '((mark    10   4)
     (name    28  15)
     (line    10  6)
     (mode    22  nil)
@@ -174,6 +174,11 @@ Usually, `context' column should be at the end and not truncated."
   "If non-nil, time in seconds to highlight the line jumped to.
 If nil, do not highlight jumping behavior."
   :type '(choice number (const :tag "Disable jump highlight" nil))
+  :group 'binky)
+
+(defcustom binky-binky-recall nil
+  "If non-nil, recall command when preview exists in `binky-binky'."
+  :type 'boolean
   :group 'binky)
 
 (defface binky-jump-highlight
@@ -225,9 +230,8 @@ If nil, do not highlight jumping behavior."
 
 (defvar binky-alist nil
   "List of records (MARK . INFO) set and updated by mannual.
-MARK is a printable character between !(33) - ~(126).
-INFO is a marker or a list of form (filename line major-mode context position)
-use to stores point information.")
+MARK is a downcase letter between a-z.  INFO is a marker or a list of form
+ (filename line major-mode context position) use to stores point information.")
 
 (defvar binky-auto-alist nil
   "Alist of records (MARK . MARKER), set and updated automatically.")
@@ -252,6 +256,9 @@ use to stores point information.")
 
 (defvar binky-debug-buffer "*Binky Debug*"
   "Buffer used to debug.")
+
+(defvar binky-binky-keep-alive nil
+  "If t, keep preview.")
 
 ;;; Functions
 
@@ -370,7 +377,8 @@ ARGS format is as same as `format' command."
 
 (defun binky--preview-extract (alist)
   "Return truncated string with selected columns according to ALIST."
-  (format "%s\n"
+  (format "%s%s\n"
+          (if (binky--preview-horizontal-p) "" "  ")
 		  (mapconcat
 		   (lambda (x)
 			 (let* ((item (car x))
@@ -424,10 +432,9 @@ ARGS format is as same as `format' command."
 		   (binky--preview-column))))
 
 (defun binky-preview (&optional force)
-  "Display `binky-preview-buffer'.
+  "Preview records of marked positions in `binky-preview-buffer'.
 When there is no window currently showing the buffer or FORCE is non-nil,
-popup the window on the bottom."
-  ;; TODO show-empty enable
+popup the window on the side `binky-preview-side'."
   (let ((total (remove nil
 					   (cons binky-back-record
                              (if binky-preview-auto-first
@@ -458,6 +465,7 @@ popup the window on the bottom."
 				 (back (and binky-back-record
 							(binky--preview-propertize binky-back-record)))
 				 (dup (and back (rassoc (cdr back) (cdr final)))))
+            (erase-buffer)
 			;; insert header if non-nil
 			(when (and (cl-some #'numberp (mapcar #'cdr (binky--preview-column)))
 					   binky-preview-show-header)
@@ -471,7 +479,7 @@ popup the window on the bottom."
 				  (if dup (cdr final) final))))))))
 
 (defun binky--jump-highlight ()
-  "Highlight current line in `binky-jump-highlight-duration' seconds."
+  "Highlight line jumped to in `binky-jump-highlight-duration' seconds."
   (let ((beg (line-beginning-position))
         (end (line-beginning-position 2)))
     (if binky-jump-overlay
@@ -489,17 +497,18 @@ popup the window on the bottom."
      ((memq char (cons help-char help-event-list)) 'help)
      ((equal char binky-mark-back) 'back)
      ((memq char binky-mark-auto) 'auto)
-     ((and (characterp char) (<= 33 char 126)) 'mannual)
+     ((and (characterp char) (<= 97 char 122)) 'mannual)
+     ((and (characterp char) (<= 65 char 90)) 'delete)
      (t nil))))
 
 (defun binky--mark-exist (mark)
-  "Return non-nil if MARK already exists in both alists."
+  "Return non-nil if MARK already exists in records."
   (or (alist-get mark (list binky-back-record))
 	  (alist-get mark binky-alist)
 	  (alist-get mark binky-auto-alist)))
 
 (defun binky--mark-add (mark)
-  "Add (MARK . MARKER) into `binky-alist'."
+  "Add (MARK . MARKER) into records."
   (cond
    ((not (eq (binky--mark-type mark) 'mannual))
     (message "%s not allowed." mark))
@@ -513,13 +522,14 @@ popup the window on the bottom."
 
 (defun binky--mark-delete (mark)
   "Delete (MARK . INFO) from `binky-alist'."
-  (if (and (binky--mark-exist mark)
-		   (eq (binky--mark-type mark) 'mannual))
+  (if-let* ((mark (downcase mark))
+            ((eq (binky--mark-type mark) 'mannual))
+            ((binky--mark-exist mark)))
 	  (setq binky-alist (assoc-delete-all mark binky-alist))
     (message "%s is not allowed." mark)))
 
 (defun binky--mark-jump (mark)
-  "Jump to point according to (MARK . INFO) in both alists."
+  "Jump to point according to (MARK . INFO) in records."
   (if-let ((info (binky--mark-exist mark)))
 	  (progn
         (if (characterp binky-mark-back)
@@ -536,31 +546,40 @@ popup the window on the bottom."
 		  (binky--jump-highlight)))
     (message "No marks %s" mark)))
 
-(defun binky-mark-read (prompt)
-  "Read and return a MARK possibly showing existing records.
-Prompt with the string PROMPT.  If `binky-alist', `binky-auto-alist' and
-`binky-preview-delay' are both non-nil, display a window listing exisiting
-marks after `binky-preview-delay' seconds.  If `help-char' (or a member of
-`help-event-list') is pressed, display such a window regardless.   Press
-\\[keyboard-quit] to quit."
+(defun binky-mark-read (prompt &optional from-binky-binky)
+  "Read and return a MARK possibly with preview.
+Prompt with the string PROMPT and  may display a window listing exisiting
+records after `binky-preview-delay' seconds.  When FROM-BINKY-BINKY is non-nil
+and preview exists, preview buffer may keep alive according to
+variable `binky-binky-recall'.
+
+If `help-char' (or a member of `help-event-list') is pressed, display preview
+window regardless.  Press \\[keyboard-quit] to quit."
   (let ((timer (when (numberp binky-preview-delay)
 		         (run-with-timer binky-preview-delay nil #'binky-preview))))
     (unwind-protect
         (progn
-		  (while (or (eq (binky--mark-type
-						  (read-key (propertize prompt 'face 'minibuffer-prompt)))
-                         'help))
+		  (while (eq (binky--mark-type
+					  (read-key (propertize prompt 'face 'minibuffer-prompt)))
+                     'help)
             (binky-preview))
 		  (when (eq (binky--mark-type) 'quit)
             (keyboard-quit))
-		  (if (memq (binky--mark-type) '(auto back mannual))
+		  (if (memq (binky--mark-type) '(auto back mannual delete))
 			  last-input-event
             (message "Non-character input-event")))
 	  (and (timerp timer) (cancel-timer timer))
-	  (let* ((buf binky-preview-buffer)
-             (win (get-buffer-window buf)))
-        (and (window-live-p win) (delete-window win))
-        (and (get-buffer buf) (kill-buffer buf))))))
+      ;; enable keep-alive condition
+      (setq binky-binky-keep-alive
+            (and from-binky-binky
+                 binky-binky-recall
+                 (get-buffer-window binky-preview-buffer)))
+      (when (or (eq (binky--mark-type) 'quit)
+                (null binky-binky-keep-alive))
+	    (let* ((buf binky-preview-buffer)
+               (win (get-buffer-window buf)))
+          (and (window-live-p win) (delete-window win))
+          (and (get-buffer buf) (kill-buffer buf)))))))
 
 ;;; Commands
 
@@ -584,20 +603,28 @@ marks after `binky-preview-delay' seconds.  If `help-char' (or a member of
 
 ;;;###autoload
 (defun binky-binky (mark)
-  "Command to add, delete or jump with MARK.
-If MARK is exists, then call `binky-jump'.
-If MARK doesn't existsk, then call `binky-add'.
-;; TODO If MARK is Upercase, and the lowercase exists, then call `binky-delete'."
-  (interactive (list (binky-mark-read "Mark: ")))
+  "Command to add, delete or jump records with MARK at once.
+
+If MARK exists, then call `binky-jump'.
+If MARK doesn't exist, then call `binky-add'.
+If MARK is uppercase, and the lowercase exists, then call `binky-delete'.
+
+When preview exists and `binky-binky-recall' is t, then recall the `binky-binky'
+untill \\[keyboard-quit] pressed, or it works as same as single command."
+  (interactive (list (binky-mark-read "Mark: " t)))
   (if (binky--mark-exist mark)
 	  (binky--mark-jump mark)
-    (and (eq (binky--mark-type mark) 'mannual)
-         (binky--mark-add mark))))
+    (if (eq (binky--mark-type mark) 'mannual)
+        (binky--mark-add mark)
+      (binky--mark-delete mark)))
+  (when binky-binky-keep-alive
+    (binky-preview 'force)
+    (call-interactively 'binky-binky)))
 
 (define-minor-mode binky-mode
   "Toggle `binky-mode'.
-This global minor mode allows you to easily jump between buffers
-you used ever."
+This global minor mode allows you to jump easily between buffers
+you used and marked position."
   :group 'binky
   :global t
   :require 'binky-mode
