@@ -117,13 +117,21 @@ If nil, disable preview, unless \\[help] is pressed."
   :type '(choice number (const :tag "No preview unless requested" nil))
   :group 'binky)
 
+(defcustom binky-preview-side 'bottom
+  "Which side to popup preview buffer."
+  :type '(choice (const top)
+                 (const bottom)
+				 (cosnt left)
+				 (cosnt right))
+  :group 'binky)
+
 (defcustom binky-preview-column
-  '((mark     .  6)
-    (name     .  26)
-    (line     .  10)
-    (mode     .  22)
-    (context  .  nil))
-  "List of pairs (COLUMN . LENGTH) to display in binky preview.
+  '((mark    8   4)
+    (name    28  15)
+    (line    10  6)
+    (mode    22  nil)
+    (context 0   nil))
+  "List of elements (COLUMN VERTICAL HORIZONTAL) to display preview.
 COLUMN is one of five parameters of record, listed in `binky-alist'
 and `binky-auto-alist'.
 
@@ -133,13 +141,18 @@ The `line' is column to show line number.
 The `mode' is column to show major mode.
 The `context' is column to show line content.
 
-LENGTH is a number for COLUMN width.  If LENGTH is nil, then COLUMN would
-not be truncated.  Usually, `context' column should be at the end and not
-truncated."
+VERTICAL and HORIZONTAL are width of the COLUMN depended on
+`binky-preview-side'.  VERTICAL used for `top' and `bottom',
+HORIZONTAL used for `left' and `right'.
+If it's is nil, then COLUMN would not be displayed.
+If it's 0, the COLUMN would not be truncated.
+Usually, `context' column should be at the end and not truncated."
+  ;; :type '(list symbol (choice number (const nil)) (choice number (const nil)))
   :type '(alist
           :key-type symbol
-          :value-type '(choice number (const :tag "No limit for last column" nil))
-          :options '(mark name line mode context))
+          :options '(mark name line mode context)
+		  :value-type '(group (choice number (const nil))
+							  (choice number (const nil))))
   :group 'binky)
 
 (defcustom binky-preview-ellipsis ".."
@@ -343,28 +356,38 @@ ARGS format is as same as `format' command."
                  (equal (car info) buffer-file-name))
         (setcdr record (set-marker (make-marker) (cadr info)))))))
 
+(defun binky--preview-horizontal-p ()
+  "Return non-nil if binky preview buffer in horizontally."
+  (not (null (memq binky-preview-side '(left right)))))
+
+(defun binky--preview-column ()
+  "Return alist of elements (COLUMN . WIDTH) to display preview."
+  (cl-remove-if (lambda (x) (null (cdr x)))
+                (mapcar (lambda (f)
+  					      (cons (nth 0 f)
+  						        (nth (if (binky--preview-horizontal-p) 2 1) f)))
+  				        binky-preview-column)))
+
 (defun binky--preview-extract (alist)
   "Return truncated string with selected columns according to ALIST."
-  (format " %s\n"
-          (mapconcat (lambda (x)
-                       (let* ((item (car x))
-                              (limit (cdr x))
-                              (str (alist-get item alist))
-                              (len (length str))
-                              (upper (apply #'max
-                                            (cl-remove-if-not #'numberp
-                                                              (mapcar #'cdr binky-preview-column)))))
-                         (when (numberp limit)
-                           (setf limit (max limit (length (symbol-name item))))
-                           (and (> len limit)
-                                (setf (substring str
-                                                 (- limit
-                                                    (length binky-preview-ellipsis))
-                                                 limit)
-                                      binky-preview-ellipsis))
-                           (setf (substring str len nil) (make-string upper 32)))
-                         (substring str 0 limit)))
-                     binky-preview-column "  ")))
+  (format "%s\n"
+		  (mapconcat
+		   (lambda (x)
+			 (let* ((item (car x))
+					(limit (cdr x))
+					(str (alist-get item alist))
+					(len (length str)))
+			   (if (zerop limit)
+				   (substring str 0 nil)
+				 (setf limit (max limit (length (symbol-name item))))
+				 (and (> len limit)
+                      (setf (substring str
+                                       (- limit (length binky-preview-ellipsis))
+                                       limit)
+							binky-preview-ellipsis))
+				 (setf (substring str len nil) (make-string limit 32))
+				 (substring str 0 limit))))
+		   (binky--preview-column) "  ")))
 
 (defun binky--preview-propertize (record)
   "Return formated string for RECORD in preview."
@@ -372,35 +395,33 @@ ARGS format is as same as `format' command."
     (or killed (setq record (cons (car record) (binky--record-get-info record))))
     (cl-mapcar
      (lambda (x y)
-       (let ((column-face (intern (concat "binky-preview-column-" (symbol-name x))))
+	   (let ((column-face (intern (concat "binky-preview-column-" (symbol-name x))))
              (cond-face (cond
                          (killed 'binky-preview-shadow)
                          ((and (eq x 'mark)
-                               (memq (binky--mark-type (string-to-char (substring y -1))) '(auto back)))
-                          (intern (concat "binky-preview-column-mark-"
-                                          (symbol-name (binky--mark-type
+							   (memq (binky--mark-type (string-to-char (substring y -1))) '(auto back)))
+						  (intern (concat "binky-preview-column-mark-"
+										  (symbol-name (binky--mark-type
                                                         (string-to-char (substring y -1)))))))
                          (t nil))))
          (cons x (if (or killed (facep column-face))
                      (propertize y 'face (or cond-face column-face))
-                   y))))
+				   y))))
      '(mark name line mode context)
      (list (concat "  " (single-key-description (nth 0 record)))
-           (file-name-nondirectory (nth 1 record))
-           (number-to-string (nth 2 record))
-           (string-remove-suffix "-mode" (symbol-name (nth 3 record)))
-           (string-trim (nth 4 record))))))
+		   (file-name-nondirectory (nth 1 record))
+		   (number-to-string (nth 2 record))
+		   (string-remove-suffix "-mode" (symbol-name (nth 3 record)))
+		   (string-trim (nth 4 record))))))
 
 (defun binky--preview-header ()
   "Return formated string of header for preview."
   (binky--preview-extract
    (mapcar (lambda (x)
-             (cons (car x)
-                   (propertize
-                    (symbol-name (car x))
-                    'face
-                    'binky-preview-header)))
-           binky-preview-column)))
+             (cons (car x) (propertize (symbol-name (car x))
+                                       'face
+                                       'binky-preview-header)))
+		   (binky--preview-column))))
 
 (defun binky-preview (&optional force)
   "Display `binky-preview-buffer'.
@@ -408,39 +429,46 @@ When there is no window currently showing the buffer or FORCE is non-nil,
 popup the window on the bottom."
   ;; TODO show-empty enable
   (let ((total (remove nil
-                       (cons binky-back-record
+					   (cons binky-back-record
                              (if binky-preview-auto-first
                                  (append binky-auto-alist binky-alist)
-                               (append binky-alist binky-auto-alist))))))
-    (when (and (or force
-                   (not (get-buffer-window binky-preview-buffer)))
-               total)
-      (with-current-buffer-window
-          binky-preview-buffer
-          (cons 'display-buffer-in-side-window
-                '((window-height . fit-window-to-buffer)
-                  (preserve-size . (nil . t))
-                  (side . bottom)))
-          nil
-        (progn
-          (setq cursor-in-non-selected-windows nil
-                mode-line-format nil
-                truncate-lines t)
-          ;; insert header if non-nil
-          (when (and (consp binky-preview-column)
-                     binky-preview-show-header)
-            (insert (binky--preview-header)))
-          (let* ((final (mapcar #'binky--preview-propertize total))
-                 (back (and binky-back-record
-                            (binky--preview-propertize binky-back-record)))
-                 (dup (and back (rassoc (cdr back) (cdr final)))))
-            (when dup
-              (setf (cdar dup)
-                    (concat (substring (cdar back) -1)
-                            (substring (cdar dup) 1))))
-            (mapc (lambda (record)
-                    (insert (binky--preview-extract record)))
-                  (if dup (cdr final) final))))))))
+							   (append binky-alist binky-auto-alist))))))
+    (when (or force
+			  (not (get-buffer-window binky-preview-buffer)))
+	  (with-current-buffer-window
+		  binky-preview-buffer
+		  (cons 'display-buffer-in-side-window
+				(append
+				 `((dedicated . t)
+				   (side      . ,binky-preview-side))
+				 (if (binky--preview-horizontal-p)
+					 '((window-width . fit-window-to-buffer)
+					   ;; (preserve-size . (t . t))
+					   )
+				   '((window-height . fit-window-to-buffer)
+					 ;; (preserve-size . (nil . t))
+					 ))))
+		  nil
+		(progn
+		  (setq cursor-in-non-selected-windows nil
+				mode-line-format nil
+				truncate-lines t)
+		  (setq-local fit-window-to-buffer-horizontally t)
+		  (let* ((final (mapcar #'binky--preview-propertize total))
+				 (back (and binky-back-record
+							(binky--preview-propertize binky-back-record)))
+				 (dup (and back (rassoc (cdr back) (cdr final)))))
+			;; insert header if non-nil
+			(when (and (cl-some #'numberp (mapcar #'cdr (binky--preview-column)))
+					   binky-preview-show-header)
+			  (insert (binky--preview-header)))
+			(when dup
+			  (setf (cdar dup)
+					(concat (substring (cdar back) -1)
+							(substring (cdar dup) 1))))
+			(mapc (lambda (record)
+					(insert (binky--preview-extract record)))
+				  (if dup (cdr final) final))))))))
 
 (defun binky--jump-highlight ()
   "Highlight current line in `binky-jump-highlight-duration' seconds."
@@ -448,8 +476,8 @@ popup the window on the bottom."
         (end (line-beginning-position 2)))
     (if binky-jump-overlay
         (move-overlay binky-jump-overlay beg end)
-      (setq binky-jump-overlay (make-overlay beg end))
-      (overlay-put binky-jump-overlay 'face 'binky-jump-highlight)))
+	  (setq binky-jump-overlay (make-overlay beg end))
+	  (overlay-put binky-jump-overlay 'face 'binky-jump-highlight)))
   (sit-for binky-jump-highlight-duration)
   (delete-overlay binky-jump-overlay))
 
@@ -467,8 +495,8 @@ popup the window on the bottom."
 (defun binky--mark-exist (mark)
   "Return non-nil if MARK already exists in both alists."
   (or (alist-get mark (list binky-back-record))
-      (alist-get mark binky-alist)
-      (alist-get mark binky-auto-alist)))
+	  (alist-get mark binky-alist)
+	  (alist-get mark binky-auto-alist)))
 
 (defun binky--mark-add (mark)
   "Add (MARK . MARKER) into `binky-alist'."
@@ -486,26 +514,26 @@ popup the window on the bottom."
 (defun binky--mark-delete (mark)
   "Delete (MARK . INFO) from `binky-alist'."
   (if (and (binky--mark-exist mark)
-           (eq (binky--mark-type mark) 'mannual))
-      (setq binky-alist (assoc-delete-all mark binky-alist))
+		   (eq (binky--mark-type mark) 'mannual))
+	  (setq binky-alist (assoc-delete-all mark binky-alist))
     (message "%s is not allowed." mark)))
 
 (defun binky--mark-jump (mark)
   "Jump to point according to (MARK . INFO) in both alists."
   (if-let ((info (binky--mark-exist mark)))
-      (progn
+	  (progn
         (if (characterp binky-mark-back)
             (setq binky-back-record (cons binky-mark-back (point-marker)))
-          (setq binky-back-record nil))
+		  (setq binky-back-record nil))
         (if (markerp info)
             (progn
-              (switch-to-buffer (marker-buffer info))
-              (goto-char info))
-          (find-file (car info))
-          (goto-char (car (last info))))
+			  (switch-to-buffer (marker-buffer info))
+			  (goto-char info))
+		  (find-file (car info))
+		  (goto-char (car (last info))))
         (when (and (numberp binky-jump-highlight-duration)
-                   (> binky-jump-highlight-duration 0))
-          (binky--jump-highlight)))
+				   (> binky-jump-highlight-duration 0))
+		  (binky--jump-highlight)))
     (message "No marks %s" mark)))
 
 (defun binky-mark-read (prompt)
@@ -519,17 +547,17 @@ marks after `binky-preview-delay' seconds.  If `help-char' (or a member of
 		         (run-with-timer binky-preview-delay nil #'binky-preview))))
     (unwind-protect
         (progn
-          (while (or (eq (binky--mark-type
-                          (read-key (propertize prompt 'face 'minibuffer-prompt)))
+		  (while (or (eq (binky--mark-type
+						  (read-key (propertize prompt 'face 'minibuffer-prompt)))
                          'help))
             (binky-preview))
-          (when (eq (binky--mark-type) 'quit)
+		  (when (eq (binky--mark-type) 'quit)
             (keyboard-quit))
-          (if (memq (binky--mark-type) '(auto back mannual))
-              last-input-event
+		  (if (memq (binky--mark-type) '(auto back mannual))
+			  last-input-event
             (message "Non-character input-event")))
-      (and (timerp timer) (cancel-timer timer))
-      (let* ((buf binky-preview-buffer)
+	  (and (timerp timer) (cancel-timer timer))
+	  (let* ((buf binky-preview-buffer)
              (win (get-buffer-window buf)))
         (and (window-live-p win) (delete-window win))
         (and (get-buffer buf) (kill-buffer buf))))))
@@ -562,7 +590,7 @@ If MARK doesn't existsk, then call `binky-add'.
 ;; TODO If MARK is Upercase, and the lowercase exists, then call `binky-delete'."
   (interactive (list (binky-mark-read "Mark: ")))
   (if (binky--mark-exist mark)
-      (binky--mark-jump mark)
+	  (binky--mark-jump mark)
     (and (eq (binky--mark-type mark) 'mannual)
          (binky--mark-add mark))))
 
@@ -574,13 +602,13 @@ you used ever."
   :global t
   :require 'binky-mode
   (if binky-mode
-      (progn
+	  (progn
         (add-hook 'buffer-list-update-hook 'binky-record-auto-update)
         (add-hook 'kill-buffer-hook 'binky-record-swap-out)
         (add-hook 'find-file-hook 'binky-record-swap-in)
         (setq binky-frequency-timer
-              (run-with-idle-timer binky-frequency-idle
-                                   t #'binky--frequency-increase)))
+			  (run-with-idle-timer binky-frequency-idle
+								   t #'binky--frequency-increase)))
     (remove-hook 'buffer-list-update-hook 'binky-record-auto-update)
     (remove-hook 'kill-buffer-hook 'binky-record-swap-out)
     (remove-hook 'find-file-hook 'binky-record-swap-in)
