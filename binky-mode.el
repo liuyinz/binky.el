@@ -324,16 +324,17 @@ ARGS format is as same as `format' command."
   (or (buffer-local-value 'binky-frequency (marker-buffer marker)) 0))
 
 (defun binky--record-get-info (record)
-  "Return a list (name line mode context position) of information from RECORD."
-  (let ((marker (cdr record)))
-    (with-current-buffer (marker-buffer marker)
+  "Return info list of elements (name line mode context position) from RECORD."
+  (let* ((info (cdr record))
+         (pos (marker-position info)))
+    (with-current-buffer (marker-buffer info)
       (list (or buffer-file-name (buffer-name) "")
-            (line-number-at-pos)
+            (line-number-at-pos pos 'absolute)
             major-mode
             (save-excursion
-              (goto-char marker)
+              (goto-char info)
               (buffer-substring (pos-bol) (pos-eol)))
-            (marker-position marker)))))
+            pos))))
 
 (defun binky-record-auto-update ()
   "Update `binky-auto-alist' and `binky-back-record' automatically."
