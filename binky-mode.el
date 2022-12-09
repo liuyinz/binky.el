@@ -170,20 +170,15 @@ Usually, `context' column should be at the end and not truncated."
   :type 'boolean
   :group 'binky)
 
-(defcustom binky-jump-highlight-duration 0.3
-  "If non-nil, time in seconds to highlight the line jumped to.
-If nil, do not highlight jumping behavior."
-  :type '(choice number (const :tag "Disable jump highlight" nil))
+(defcustom binky-highlight-duration 0.3
+  "If non-nil, time in seconds to highlight the line operated on.
+If nil, disable the highlight feature."
+  :type '(choice number (const :tag "Disable highlight" nil))
   :group 'binky)
 
 (defcustom binky-binky-recall nil
   "If non-nil, recall command when preview exists in `binky-binky'."
   :type 'boolean
-  :group 'binky)
-
-(defface binky-jump-highlight
-  '((t :inherit highlight :extend t))
-  "Face used to highlight the line jumped to."
   :group 'binky)
 
 (defface binky-preview-header
@@ -226,6 +221,26 @@ If nil, do not highlight jumping behavior."
   "Face used to highlight whole record of killed buffers in preview buffer."
   :group 'binky)
 
+(defface binky-highlight-add
+  '((t :inherit diff-refine-added))
+  "Face used to highlight the line added to record."
+  :group 'binky)
+
+(defface binky-highlight-delete
+  '((t :inherit diff-refine-removed))
+  "Face used to highlight the line deleted from record."
+  :group 'binky)
+
+(defface binky-highlight-jump
+  '((t :inherit highlight))
+  "Face used to highlight the line jumped to."
+  :group 'binky)
+
+(defface binky-highlight-warn
+  '((t :inherit diff-refine-changed))
+  "Face used to highlight the line already record."
+  :group 'binky)
+
 ;;; Variables
 
 (defvar binky-alist nil
@@ -251,8 +266,8 @@ MARK is a downcase letter between a-z.  INFO is a marker or a list of form
 (defvar binky-preview-buffer "*Binky Preview*"
   "Buffer used to preview records in binky alists.")
 
-(defvar-local binky-jump-overlay nil
-  "Overlay used to highlight the line `binky-jump' to.")
+(defvar-local binky-overlay nil
+  "Overlay used to highlight the line operated on.")
 
 (defvar binky-debug-buffer "*Binky Debug*"
   "Buffer used to debug.")
@@ -478,16 +493,20 @@ popup the window on the side `binky-preview-side'."
 					(insert (binky--preview-extract record)))
 				  (if dup (cdr final) final))))))))
 
-(defun binky--jump-highlight ()
-  "Highlight line jumped to in `binky-jump-highlight-duration' seconds."
-  (let ((beg (line-beginning-position))
-        (end (line-beginning-position 2)))
-    (if binky-jump-overlay
-        (move-overlay binky-jump-overlay beg end)
-	  (setq binky-jump-overlay (make-overlay beg end))
-	  (overlay-put binky-jump-overlay 'face 'binky-jump-highlight)))
-  (sit-for binky-jump-highlight-duration)
-  (delete-overlay binky-jump-overlay))
+(defun binky--highlight (cmd)
+  "Highlight the line CMD operated on in `binky-highlight-duration' seconds."
+  (when (and (numberp binky-highlight-duration)
+		     (> binky-highlight-duration 0))
+    (let ((beg (line-beginning-position))
+          (end (line-beginning-position 2)))
+      (if binky-overlay
+          (move-overlay binky-overlay beg end)
+	    (setq binky-overlay (make-overlay beg end)))
+	  (overlay-put binky-overlay
+                   'face
+                   (intern (concat "binky-highlight-" (symbol-name cmd)))))
+    (sit-for binky-highlight-duration)
+    (delete-overlay binky-overlay)))
 
 (defun binky--mark-type (&optional mark)
   "Return type of MARK or `last-input-event'."
@@ -515,17 +534,27 @@ popup the window on the side `binky-preview-side'."
    ((eq major-mode 'xwidget-webkit-mode)
     (message "%s not allowed" major-mode))
    ((and (binky--mark-exist mark) (not binky-mark-overwrite))
+    (binky--highlight 'warn)
     (message "Mark %s exists." mark))
    ((rassoc (point-marker) binky-alist)
+    (binky--highlight 'warn)
     (message "Record exists." ))
-   (t (setf (alist-get mark binky-alist) (point-marker)))))
+   (t
+    (binky--highlight 'add)
+    (setf (alist-get mark binky-alist) (point-marker)))))
 
 (defun binky--mark-delete (mark)
   "Delete (MARK . INFO) from `binky-alist'."
   (if-let* ((mark (downcase mark))
-            ((eq (binky--mark-type mark) 'mannual))
-            ((binky--mark-exist mark)))
-	  (setq binky-alist (assoc-delete-all mark binky-alist))
+            (info (binky--mark-exist mark))
+            ((eq (binky--mark-type mark) 'mannual)))
+      (progn
+        (when (markerp info)
+          (with-current-buffer (marker-buffer info)
+            (save-excursion
+              (goto-char info)
+              (binky--highlight 'delete))))
+	    (setq binky-alist (assoc-delete-all mark binky-alist)))
     (message "%s is not allowed." mark)))
 
 (defun binky--mark-jump (mark)
@@ -541,9 +570,7 @@ popup the window on the side `binky-preview-side'."
 			  (goto-char info))
 		  (find-file (car info))
 		  (goto-char (car (last info))))
-        (when (and (numberp binky-jump-highlight-duration)
-				   (> binky-jump-highlight-duration 0))
-		  (binky--jump-highlight)))
+        (binky--highlight 'jump))
     (message "No marks %s" mark)))
 
 (defun binky-mark-read (prompt &optional from-binky-binky)
