@@ -385,7 +385,7 @@ ARGS format is as same as `format' command."
     (let ((info (cdr record)))
       (when (and (not (markerp info))
                  (equal (car info) buffer-file-name))
-        (setcdr record (set-marker (make-marker) (cadr info)))))))
+        (setcdr record (set-marker (make-marker) (car (last info))))))))
 
 (defun binky--preview-horizontal-p ()
   "Return non-nil if binky preview buffer in horizontally."
