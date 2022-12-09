@@ -51,6 +51,15 @@ mark.  Letters, digits, punctuation, etc.  If nil, disable the feature."
   :type '(choice character (const :tag "Disable back mark" nil))
   :group 'binky)
 
+(defcustom binky-mark-quit ?q
+  "Character used to quit the commad and preview if exists.
+Any self-inserting character between ! (33) - ~ (126) is allowed to used as
+mark.  Letters, digits, punctuation, etc.  If nil, disable the feature.
+
+\\[keyboard-quit] and <escape> are enable by default."
+  :type '(choice character (const :tag "Disable quit mark" nil))
+  :group 'binky)
+
 (defcustom binky-mark-auto
   '(?1 ?2 ?3 ?4 ?5 ?6 ?7 ?8 ?9 ?0)
   "List of printable characters to record recent used buffers.
@@ -509,10 +518,16 @@ popup the window on the side `binky-preview-side'."
     (delete-overlay binky-overlay)))
 
 (defun binky--mark-type (&optional mark)
-  "Return type of MARK or `last-input-event'."
+  "Return type of MARK or `last-input-event'.
+The `quit' means to quit the command and preview.
+The `help' means to preview records if not exist.
+The `back' means to jump back last position.
+The `auto' means to jump to used buffers.
+The `mannual' means to operate on records mannually.
+The `delete' means to delete existing mark by uppercase."
   (let ((char (or mark last-input-event)))
     (cond
-     ((memq char '(?\C-g ?\C-\[ escape)) 'quit)
+     ((memq char (cons binky-mark-quit '(?\C-g ?\C-\[ escape))) 'quit)
      ((memq char (cons help-char help-event-list)) 'help)
      ((equal char binky-mark-back) 'back)
      ((memq char binky-mark-auto) 'auto)
