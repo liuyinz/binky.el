@@ -81,9 +81,9 @@ A lot of options are provided. See Docstrings
 
 ## Todo
 
-- [ ] Mort sorting strategy: frecency, duration
+- [x] Avoid duplicated records added
 - [ ] Buffer margin indicator support
-- [ ] Avoid duplicated records added
+- [ ] More sorting strategy: frecency, duration
 
 ## License
 

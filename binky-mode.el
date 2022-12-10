@@ -275,15 +275,7 @@ MARK is a downcase letter between a-z.  INFO is a marker or a list of form
 (defvar binky-debug-buffer "*Binky Debug*"
   "Buffer used to debug.")
 
-(defvar binky-binky-keep-alive nil
-  "If t, keep preview.")
-
 ;;; Functions
-
-;; (defun binky--message (mark)
-;;   "docstring"
-;;   (error "")
-;;   )
 
 (defun binky--log (&rest args)
   "Print log into `binky-debug-buffer' about ARGS.
