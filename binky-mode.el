@@ -246,7 +246,7 @@ If nil, disable the highlight feature."
   :group 'binky)
 
 (defface binky-highlight-warn
-  '((t :inherit warning :inverse-video t))
+  '((t :inherit warning :inverse-video t :extend t))
   "Face used to highlight the line already record."
   :group 'binky)
 
