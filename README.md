@@ -19,6 +19,7 @@ same mechanism like `point-to-register` but with an enhanced experience.
     - [dependencies](#dependencies)
     - [package](#package)
   - [Usage](#usage)
+  - [Customization](#customization)
   - [Feature](#feature)
   - [Todo](#todo)
   - [License](#license)
@@ -27,9 +28,13 @@ same mechanism like `point-to-register` but with an enhanced experience.
 
 ## Screenshot
 
-- Call `M-x binky-binky` command with preview
+- Call `M-x binky-*` related command
 
 ![binky with preview](image/binky-preview.png)
+
+`?` or `C-h` for popup preview mannually
+
+`q`, `C-g` or `escape` for quit
 
 ## Install
 
@@ -60,23 +65,24 @@ Install with `M-x package-install` <kbd>RET</kbd> `binky-mode` from within Emacs
   :hook (after-init-hook . binky-mode))
 ```
 
-Run with `M-x` `binky-add` `binky-delete` `binky-jump` `binky-binky`
+- `binky-add`    : add current positon to records
+- `binky-delete` : delete existed position from records
+- `binky-jump`   : jump to position in records
+- `binky-binky`  : one command to rule all. With `C-u` prefix, keep editing untill quit 
+
+## Customization
+
+A lot of options are provided. See Docstrings
 
 ## Feature
 
-- Better UI experience than `register-to-point`, such as preview customization
-  and jump highlight
-- Integration with buffers switch, and more sorting strategies are provided now
-  and in future
-- One command `binky-binky` to rule all
-  - [x] add
-  - [x] jump
-  - [x] delete
+- Better UI experience than `register-to-point`, such as preview customization and jump highlight
+- Integration with buffers switch, and more sorting strategies are provided now and in future
 
 ## Todo
 
-- [ ] Implement sorting strategy: frecency, duration
-- [ ] Add margin indicator support for `binky-alist`
+- [ ] Mort sorting strategy: frecency, duration
+- [ ] Buffer margin indicator support
 - [ ] Avoid duplicated records added
 
 ## License
