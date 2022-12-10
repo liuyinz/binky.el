@@ -79,11 +79,10 @@ marks.  Letters, digits, punctuation, etc.  If nil, disable the feature."
                  )
   :group 'binky)
 
-;; ;; TODO
-;; (defcustom binky-mark-distance 200
-;;   "Maxmium distance bwtween points for them to be considered equal."
-;;   :type 'number
-;;   :group 'binky)
+(defcustom binky-mark-distance 5
+  "Maxmium distance in lines count bwtween positions to be considered equal."
+  :type 'number
+  :group 'binky)
 
 (defcustom binky-mark-overwrite nil
   "If non-nil, overwrite record with existing mark when call `binky-add'."
@@ -331,6 +330,16 @@ ARGS format is as same as `format' command."
               (buffer-substring (pos-bol) (pos-eol)))
             pos))))
 
+(defun binky--record-exist-p (marker)
+  "Return non-nil if MARKER' line uncoverd in records.
+Only when the line MARKER has larger disatance than any"
+  (cl-some (lambda (x)
+             (when (markerp (cdr x))
+               (<= (abs (- (nth 1 (binky--record-get-info (cons nil marker)))
+                           (nth 1 (binky--record-get-info x))))
+                   binky-mark-distance)))
+           binky-alist))
+
 (defun binky-record-auto-update ()
   "Update `binky-auto-alist' and `binky-back-record' automatically."
   ;; delete back-record if buffer not exists
@@ -351,7 +360,11 @@ ARGS format is as same as `format' command."
           (unless (cl-some #'funcall filters)
             (push (point-marker) result))))
       ;; delete marker duplicated with `binky-alist'
-      (setq result (cl-remove-if (lambda (m) (rassoc m binky-alist)) result))
+      (setq result (cl-remove-if (lambda (m)
+                                   (let ((binky-mark-distance 0))
+                                     (binky--record-exist-p m)))
+                                 ;; (rassoc m binky-alist)
+                                 result))
       (cl-case binky-mark-sort-by
         (recency
          (setq result (reverse result)))
@@ -545,7 +558,8 @@ The `delete' means to delete existing mark by uppercase."
    ((and (binky--mark-exist mark) (not binky-mark-overwrite))
     (binky--highlight 'warn)
     (message "Mark %s exists." mark))
-   ((rassoc (point-marker) binky-alist)
+   ((binky--record-exist-p (point-marker))
+    ;; (rassoc (point-marker) binky-alist)
     (binky--highlight 'warn)
     (message "Record exists." ))
    (t
