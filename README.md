@@ -21,6 +21,7 @@ same mechanism like `point-to-register` but with an enhanced experience.
   - [Usage](#usage)
   - [Customization](#customization)
   - [Feature](#feature)
+  - [Comparison](#comparison)
   - [Todo](#todo)
   - [License](#license)
 
@@ -72,12 +73,31 @@ Install with `M-x package-install` <kbd>RET</kbd> `binky-mode` from within Emacs
 
 ## Customization
 
-A lot of options are provided. See Docstrings
+A lot of options are provided. See docstrings in file.
 
 ## Feature
 
 - Better UI experience than `register-to-point`, such as preview customization and jump highlight
 - Integration with buffers switch, and more sorting strategies are provided now and in future
+
+## Comparison
+
+- [Dogears](https://github.com/alphapapa/dogears.el)
+  - Bookmark style record
+  - More infomations: relevance, within, directory, etc
+
+- [Binky-mode](https://github.com/liuyinz/binky-mode)
+  - Register style record
+  - Vim-like mark and jump
+  - Flexible and customizable
+
+I have used dogears for several months, and it's great in most features except so many information
+I don't need. A better and avy-like jumping system is the top priority for me.
+
+During time of using vim, what I missed most is [Vim-marks](https://vim.fandom.com/wiki/Using_marks). However,
+evil is too heavy, so I write `binky-mode` to imitate part of features.
+
+Enjoy it.
 
 ## Todo
 
