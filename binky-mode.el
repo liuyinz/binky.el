@@ -69,8 +69,14 @@ marks.  Letters, digits, punctuation, etc.  If nil, disable the feature."
                  (const :tag "Disable auto marks" nil))
   :group 'binky)
 
-(defcustom binky-mark-sort-by 'recency
-  "Sorting strategy for used buffers."
+(defcustom binky-mark-overwrite nil
+  "If non-nil, overwrite record with existing mark when call `binky-add'."
+  :type 'boolean
+  :group 'binky)
+
+
+(defcustom binky-record-sort-by 'recency
+  "Sorting strategy for auto marked buffers."
   :type '(choice (const :tag "Sort by recency" recency)
                  (const :tag "Sort by frequency" frequency)
                  ;; TODO
@@ -79,13 +85,13 @@ marks.  Letters, digits, punctuation, etc.  If nil, disable the feature."
                  )
   :group 'binky)
 
-(defcustom binky-mark-distance 5
+(defcustom binky-record-distance 5
   "Maxmium distance in lines count bwtween positions to be considered equal."
   :type 'number
   :group 'binky)
 
-(defcustom binky-mark-overwrite nil
-  "If non-nil, overwrite record with existing mark when call `binky-add'."
+(defcustom binky-record-prune nil
+  "If non-nil, delete related record when buffer was killed."
   :type 'boolean
   :group 'binky)
 
@@ -329,7 +335,7 @@ Only when the line MARKER has larger disatance than any"
              (when (markerp (cdr x))
                (<= (abs (- (nth 1 (binky--record-get-info (cons nil marker)))
                            (nth 1 (binky--record-get-info x))))
-                   binky-mark-distance)))
+                   binky-record-distance)))
            binky-alist))
 
 (defun binky-record-auto-update ()
@@ -338,7 +344,7 @@ Only when the line MARKER has larger disatance than any"
   (when (and binky-back-record
              (null (marker-buffer (cdr binky-back-record))))
     (setq binky-back-record nil))
-  ;; update used buffers
+  ;; update auto marked records
   (let* ((marks (remove binky-mark-back binky-mark-auto))
          (len (length marks))
          (result (list))
@@ -353,11 +359,11 @@ Only when the line MARKER has larger disatance than any"
             (push (point-marker) result))))
       ;; delete marker duplicated with `binky-alist'
       (setq result (cl-remove-if (lambda (m)
-                                   (let ((binky-mark-distance 0))
+                                   (let ((binky-record-distance 0))
                                      (binky--record-exist-p m)))
                                  ;; (rassoc m binky-alist)
                                  result))
-      (cl-case binky-mark-sort-by
+      (cl-case binky-record-sort-by
         (recency
          (setq result (reverse result)))
         (frequency
@@ -376,7 +382,8 @@ Only when the line MARKER has larger disatance than any"
     (let ((info (cdr record)))
 	  (when (and (markerp info)
 	             (eq (marker-buffer info) (current-buffer)))
-        (if buffer-file-name
+        (if (and buffer-file-name
+                 (null binky-record-prune))
 	        (setcdr record (binky--record-get-info record))
           (delete record binky-alist))))))
 
@@ -521,7 +528,7 @@ popup the window on the side `binky-preview-side'."
 The `quit' means to quit the command and preview.
 The `help' means to preview records if not exist.
 The `back' means to jump back last position.
-The `auto' means to jump to used buffers.
+The `auto' means to jump to auto marked buffers.
 The `mannual' means to operate on records mannually.
 The `delete' means to delete existing mark by uppercase."
   (let ((char (or mark last-input-event)))
@@ -672,14 +679,14 @@ you used and marked position."
         (add-hook 'buffer-list-update-hook 'binky-record-auto-update)
         (add-hook 'kill-buffer-hook 'binky-record-swap-out)
         (add-hook 'find-file-hook 'binky-record-swap-in)
-        (when (eq binky-mark-sort-by 'frequency)
+        (when (eq binky-record-sort-by 'frequency)
           (setq binky-frequency-timer
 			    (run-with-idle-timer binky-frequency-idle
 								     t #'binky--frequency-increase))))
     (remove-hook 'buffer-list-update-hook 'binky-record-auto-update)
     (remove-hook 'kill-buffer-hook 'binky-record-swap-out)
     (remove-hook 'find-file-hook 'binky-record-swap-in)
-    (when (eq binky-mark-sort-by 'frequency)
+    (when (eq binky-record-sort-by 'frequency)
       (cancel-timer binky-frequency-timer)
       (setq binky-frequency-timer nil))))
 
