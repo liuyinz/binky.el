@@ -235,7 +235,7 @@ If nil, disable the highlight feature."
   :group 'binky)
 
 (defface binky-highlight-jump
-  '((t :inherit highlight))
+  '((t :inherit highlight :extend t))
   "Face used to highlight the line jumped to."
   :group 'binky)
 
