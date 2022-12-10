@@ -672,14 +672,16 @@ you used and marked position."
         (add-hook 'buffer-list-update-hook 'binky-record-auto-update)
         (add-hook 'kill-buffer-hook 'binky-record-swap-out)
         (add-hook 'find-file-hook 'binky-record-swap-in)
-        (setq binky-frequency-timer
-			  (run-with-idle-timer binky-frequency-idle
-								   t #'binky--frequency-increase)))
+        (when (eq binky-mark-sort-by 'frequency)
+          (setq binky-frequency-timer
+			    (run-with-idle-timer binky-frequency-idle
+								     t #'binky--frequency-increase))))
     (remove-hook 'buffer-list-update-hook 'binky-record-auto-update)
     (remove-hook 'kill-buffer-hook 'binky-record-swap-out)
     (remove-hook 'find-file-hook 'binky-record-swap-in)
-    (cancel-timer binky-frequency-timer)
-    (setq binky-frequency-timer nil)))
+    (when (eq binky-mark-sort-by 'frequency)
+      (cancel-timer binky-frequency-timer)
+      (setq binky-frequency-timer nil))))
 
 (provide 'binky-mode)
 ;;; binky-mode.el ends here
