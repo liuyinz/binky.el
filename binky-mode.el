@@ -185,11 +185,6 @@ If nil, disable the highlight feature."
   :type '(choice number (const :tag "Disable highlight" nil))
   :group 'binky)
 
-(defcustom binky-binky-recall nil
-  "If non-nil, recall command when preview exists in `binky-binky'."
-  :type 'boolean
-  :group 'binky)
-
 (defface binky-preview-header
   '((t :inherit font-lock-constant-face :underline t))
   "Face used to highlight the header in preview buffer."
@@ -474,12 +469,10 @@ popup the window on the side `binky-preview-side'."
 				 `((dedicated . t)
 				   (side      . ,binky-preview-side))
 				 (if (binky--preview-horizontal-p)
-					 '((window-width . fit-window-to-buffer)
-					   ;; (preserve-size . (t . t))
-					   )
+					 '((window-width  . fit-window-to-buffer)
+					   (preserve-size . (t . t)))
 				   '((window-height . fit-window-to-buffer)
-					 ;; (preserve-size . (nil . t))
-					 ))))
+					 (preserve-size . (nil . t))))))
 		  nil
 		(progn
 		  (setq cursor-in-non-selected-windows nil
@@ -589,15 +582,15 @@ The `delete' means to delete existing mark by uppercase."
         (binky--highlight 'jump))
     (message "No marks %s" mark)))
 
-(defun binky-mark-read (prompt &optional from-binky-binky)
+(defun binky-mark-read (prompt &optional keep-alive)
   "Read and return a MARK possibly with preview.
 Prompt with the string PROMPT and  may display a window listing exisiting
-records after `binky-preview-delay' seconds.  When FROM-BINKY-BINKY is non-nil
-and preview exists, preview buffer may keep alive according to
-variable `binky-binky-recall'.
+records after `binky-preview-delay' seconds.  When KEEP-ALIVE is non-nil,
+preview buffer keep alive.
 
 If `help-char' (or a member of `help-event-list') is pressed, display preview
 window regardless.  Press \\[keyboard-quit] to quit."
+  (and keep-alive (binky-preview 'force))
   (let ((timer (when (numberp binky-preview-delay)
 		         (run-with-timer binky-preview-delay nil #'binky-preview))))
     (unwind-protect
@@ -612,13 +605,8 @@ window regardless.  Press \\[keyboard-quit] to quit."
 			  last-input-event
             (message "Non-character input-event")))
 	  (and (timerp timer) (cancel-timer timer))
-      ;; enable keep-alive condition
-      (setq binky-binky-keep-alive
-            (and from-binky-binky
-                 binky-binky-recall
-                 (get-buffer-window binky-preview-buffer)))
       (when (or (eq (binky--mark-type) 'quit)
-                (null binky-binky-keep-alive))
+                (null keep-alive))
 	    (let* ((buf binky-preview-buffer)
                (win (get-buffer-window buf)))
           (and (window-live-p win) (delete-window win))
@@ -645,22 +633,24 @@ window regardless.  Press \\[keyboard-quit] to quit."
   (binky--mark-jump mark))
 
 ;;;###autoload
-(defun binky-binky (mark)
-  "Command to add, delete or jump records with MARK at once.
+(defun binky-binky (mark &optional keep-alive)
+  "Add, delete or jump records with MARK in one command.
 
 If MARK exists, then call `binky-jump'.
 If MARK doesn't exist, then call `binky-add'.
 If MARK is uppercase, and the lowercase exists, then call `binky-delete'.
 
-When preview exists and `binky-binky-recall' is t, then recall the `binky-binky'
-untill \\[keyboard-quit] pressed, or it works as same as single command."
-  (interactive (list (binky-mark-read "Mark: " t)))
+Interactively, KEEP-ALIVE is the prefix argument.  With no prefix argument,
+it works as same as single command.  WIth a preifx argument, preview the
+records with no delay and keep alive untill \\[keyboard-quit] pressed."
+  (interactive (list (binky-mark-read "Mark: " current-prefix-arg)
+                     current-prefix-arg))
   (if (binky--mark-exist mark)
 	  (binky--mark-jump mark)
     (if (eq (binky--mark-type mark) 'mannual)
         (binky--mark-add mark)
       (binky--mark-delete mark)))
-  (when binky-binky-keep-alive
+  (when keep-alive
     (binky-preview 'force)
     (call-interactively 'binky-binky)))
 
