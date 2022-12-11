@@ -537,6 +537,14 @@ popup the window on the side `binky-preview-side'."
     (sit-for binky-highlight-duration)
     (delete-overlay binky-overlay)))
 
+(defun binky--message (mark status)
+  "Echo infomation about MARK accordint to STATUS."
+  (let ((al '((illegal   . "is illegal")
+              (overwrite . "exists and has been overwrited")
+              (exist     . "already exists")
+              (non-exist . "doesn't exist"))))
+    (message "Mark %s %s." (single-key-description mark) (alist-get status al))))
+
 (defun binky--mark-type (&optional mark)
   "Return type of MARK or `last-input-event'.
 The `quit' means to quit the command and preview.
@@ -564,49 +572,55 @@ The `delete' means to delete existing mark by uppercase."
 (defun binky--mark-add (mark)
   "Add (MARK . MARKER) into records."
   (cond
-   ((not (eq (binky--mark-type mark) 'mannual))
-    (message "%s not allowed." mark))
    ((eq major-mode 'xwidget-webkit-mode)
-    (message "%s not allowed" major-mode))
-   ((and (binky--mark-get mark) (not binky-mark-overwrite))
-    (binky--highlight 'warn)
-    (message "Mark %s exists." mark))
+    (message "%s is not allowed" major-mode))
    ((binky--record-exist-p (point-marker))
     (binky--highlight 'warn)
-    (message "Record exists." ))
+    (message "Record already exists."))
+   ((not (eq (binky--mark-type mark) 'mannual))
+    (binky--message mark 'illegal))
+   ((and (binky--mark-get mark) (not binky-mark-overwrite))
+    (binky--highlight 'warn)
+    (binky--message mark 'exist))
    (t
     (binky--highlight 'add)
-    (setf (alist-get mark binky-alist) (point-marker)))))
+    (setf (alist-get mark binky-alist) (point-marker))
+    (and binky-mark-overwrite
+         (binky--message mark 'overwrite)))))
 
 (defun binky--mark-delete (mark)
   "Delete (MARK . INFO) from `binky-alist'."
-  (if-let* ((mark (downcase mark))
-            (info (binky--mark-get mark))
-            ((eq (binky--mark-type mark) 'mannual)))
-      (progn
-        (when (markerp info)
+  (let* ((mark (downcase mark))
+         (info (binky--mark-get mark)))
+    (cond
+     ((not (eq (binky--mark-type mark) 'mannual))
+      (binky--message mark 'illegal))
+     ((null info)
+      (binky--message mark 'non-exist))
+     (t
+      (when (markerp info)
+        (save-excursion
           (with-current-buffer (marker-buffer info)
-            (save-excursion
-              (goto-char info)
-              (binky--highlight 'delete))))
-	    (setq binky-alist (assoc-delete-all mark binky-alist)))
-    (message "%s is not allowed." mark)))
+            (goto-char info)
+            (binky--highlight 'delete))))
+	  (setq binky-alist (assoc-delete-all mark binky-alist))))))
 
 (defun binky--mark-jump (mark)
   "Jump to point according to (MARK . INFO) in records."
-  (if-let ((info (binky--mark-get mark)))
+  (if-let ((info (binky--mark-get mark))
+           (last (point-marker)))
 	  (progn
-        (if (characterp binky-mark-back)
-            (setq binky-back-record (cons binky-mark-back (point-marker)))
-		  (setq binky-back-record nil))
         (if (markerp info)
             (progn
 			  (switch-to-buffer (marker-buffer info))
 			  (goto-char info))
 		  (find-file (car info))
 		  (goto-char (car (last info))))
-        (binky--highlight 'jump))
-    (message "No marks %s" mark)))
+        (binky--highlight 'jump)
+        (if (characterp binky-mark-back)
+            (setq binky-back-record (cons binky-mark-back last))
+		  (setq binky-back-record nil)))
+    (binky--message mark 'non-exist)))
 
 (defun binky--mark-read (prompt &optional keep-alive)
   "Read and return a MARK possibly with preview.
@@ -621,15 +635,15 @@ window regardless.  Press \\[keyboard-quit] to quit."
 		         (run-with-timer binky-preview-delay nil #'binky-preview))))
     (unwind-protect
         (progn
-		  (while (eq (binky--mark-type
-					  (read-key (propertize prompt 'face 'minibuffer-prompt)))
-                     'help)
-            (binky-preview))
+		  (while (not (memq (binky--mark-type
+					         (read-key (propertize prompt 'face 'minibuffer-prompt)))
+                            '(quit auto back manual delete)))
+            (when (eq (binky--mark-type) 'help)
+              (binky-preview)))
 		  (when (eq (binky--mark-type) 'quit)
             (keyboard-quit))
-		  (if (memq (binky--mark-type) '(auto back mannual delete))
-			  last-input-event
-            (message "Non-character input-event")))
+		  (when (memq (binky--mark-type) '(auto back manual delete))
+			last-input-event))
 	  (and (timerp timer) (cancel-timer timer))
       (when (or (eq (binky--mark-type) 'quit)
                 (null keep-alive))
