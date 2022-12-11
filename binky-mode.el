@@ -52,7 +52,7 @@ mark.  Letters, digits, punctuation, etc.  If nil, disable the feature."
   :group 'binky)
 
 (defcustom binky-mark-quit ?q
-  "Character used to quit the commad and preview if exists.
+  "Character used to quit the command and preview if exists.
 Any self-inserting character between ! (33) - ~ (126) is allowed to used as
 mark.  Letters, digits, punctuation, etc.  If nil, disable the feature.
 
@@ -78,10 +78,10 @@ marks.  Letters, digits, punctuation, etc.  If nil, disable the feature."
 (defcustom binky-record-sort-by 'recency
   "Sorting strategy for auto marked buffers."
   :type '(choice (const :tag "Sort by recency" recency)
-                 (const :tag "Sort by frequency" frequency)
+                 (Const :tag "Sort by frequency" frequency)
                  ;; TODO
-                 ;; (cosnt :tag "Sort by frecency" frecency)
-                 ;; (cosnt :tag "Sort by duration" duration)
+                 ;; (const :tag "Sort by frecency" frecency)
+                 ;; (const :tag "Sort by duration" duration)
                  )
   :group 'binky)
 
@@ -106,7 +106,7 @@ For example, buffer *scratch* is always included by default."
   '("\\`\\(\\s-\\|\\*\\).*\\'")
   "List of regexps for buffer name excluded from `binky-auto-alist'.
 When a buffer name matches any of the regexps, it would not be record
-automatically unless it matchs `binky-include-regexps'.  By default, all buffer
+automatically unless it matches `binky-include-regexps'.  By default, all buffer
 names start with '*' or ' ' are excluded."
   :type '(repeat string)
   :group 'binky)
@@ -253,8 +253,8 @@ If nil, disable the highlight feature."
 ;;; Variables
 
 (defvar binky-alist nil
-  "List of records (MARK . INFO) set and updated by mannual.
-MARK is a downcase letter between a-z.  INFO is a marker or a list of form
+  "List of records (MARK . INFO) set and updated by manual.
+MARK is a lowercase letter between a-z.  INFO is a marker or a list of form
  (filename line major-mode context position) use to stores point information.")
 
 (defvar binky-auto-alist nil
@@ -272,13 +272,13 @@ MARK is a downcase letter between a-z.  INFO is a marker or a list of form
 (defvar-local binky-frequency 0
   "Frequency of current buffer.")
 
-(defvar binky-preview-buffer "*Binky Preview*"
-  "Buffer used to preview records in binky alists.")
+(defvar binky-preview-buffer "*binky-preview*"
+  "Buffer used to preview records.")
 
 (defvar-local binky-overlay nil
   "Overlay used to highlight the line operated on.")
 
-(defvar binky-debug-buffer "*Binky-debug-log*"
+(defvar binky-debug-buffer "*binky-debug-log*"
   "Buffer used to debug.")
 
 ;;; Functions
@@ -375,7 +375,6 @@ Only when the line MARKER has larger disatance than any"
       (setq result (cl-remove-if (lambda (m)
                                    (let ((binky-record-distance 0))
                                      (binky--record-exist-p m)))
-                                 ;; (rassoc m binky-alist)
                                  result))
       (cl-case binky-record-sort-by
         (recency
@@ -444,7 +443,7 @@ Only when the line MARKER has larger disatance than any"
 		   (binky--preview-column) "  ")))
 
 (defun binky--preview-propertize (record)
-  "Return formated string for RECORD in preview."
+  "Return formatted string for RECORD in preview."
   (let ((killed (not (markerp (cdr record))))
         (record (binky--record-normalized record)))
     (cl-mapcar
@@ -469,7 +468,7 @@ Only when the line MARKER has larger disatance than any"
 		   (string-trim (nth 4 record))))))
 
 (defun binky--preview-header ()
-  "Return formated string of header for preview."
+  "Return formatted string of header for preview."
   (binky--preview-extract
    (mapcar (lambda (x)
              (cons (car x) (propertize (symbol-name (car x))
@@ -538,9 +537,9 @@ popup the window on the side `binky-preview-side'."
     (delete-overlay binky-overlay)))
 
 (defun binky--message (mark status)
-  "Echo infomation about MARK accordint to STATUS."
+  "Echo information about MARK according to STATUS."
   (let ((al '((illegal   . "is illegal")
-              (overwrite . "exists and has been overwrited")
+              (overwrite . "exists and being overwritten")
               (exist     . "already exists")
               (non-exist . "doesn't exist"))))
     (message "Mark %s %s." (single-key-description mark) (alist-get status al))))
@@ -551,7 +550,7 @@ The `quit' means to quit the command and preview.
 The `help' means to preview records if not exist.
 The `back' means to jump back last position.
 The `auto' means to jump to auto marked buffers.
-The `mannual' means to operate on records mannually.
+The `manual' means to operate on records manually.
 The `delete' means to delete existing mark by uppercase."
   (let ((char (or mark last-input-event)))
     (cond
@@ -559,7 +558,7 @@ The `delete' means to delete existing mark by uppercase."
      ((memq char (cons help-char help-event-list)) 'help)
      ((equal char binky-mark-back) 'back)
      ((memq char binky-mark-auto) 'auto)
-     ((and (characterp char) (<= 97 char 122)) 'mannual)
+     ((and (characterp char) (<= 97 char 122)) 'manual)
      ((and (characterp char) (<= 65 char 90)) 'delete)
      (t nil))))
 
@@ -577,7 +576,7 @@ The `delete' means to delete existing mark by uppercase."
    ((binky--record-exist-p (point-marker))
     (binky--highlight 'warn)
     (message "Record already exists."))
-   ((not (eq (binky--mark-type mark) 'mannual))
+   ((not (eq (binky--mark-type mark) 'manual))
     (binky--message mark 'illegal))
    ((and (binky--mark-get mark) (not binky-mark-overwrite))
     (binky--highlight 'warn)
@@ -593,7 +592,7 @@ The `delete' means to delete existing mark by uppercase."
   (let* ((mark (downcase mark))
          (info (binky--mark-get mark)))
     (cond
-     ((not (eq (binky--mark-type mark) 'mannual))
+     ((not (eq (binky--mark-type mark) 'manual))
       (binky--message mark 'illegal))
      ((null info)
       (binky--message mark 'non-exist))
@@ -624,7 +623,7 @@ The `delete' means to delete existing mark by uppercase."
 
 (defun binky--mark-read (prompt &optional keep-alive)
   "Read and return a MARK possibly with preview.
-Prompt with the string PROMPT and  may display a window listing exisiting
+Prompt with the string PROMPT and  may display a window listing existing
 records after `binky-preview-delay' seconds.  When KEEP-ALIVE is non-nil,
 preview buffer keep alive.
 
@@ -681,13 +680,13 @@ If MARK doesn't exist, then call `binky-add'.
 If MARK is uppercase, and the lowercase exists, then call `binky-delete'.
 
 Interactively, KEEP-ALIVE is the prefix argument.  With no prefix argument,
-it works as same as single command.  WIth a preifx argument, preview the
-records with no delay and keep alive untill \\[keyboard-quit] pressed."
+it works as same as single command.  With a prefix argument, preview the
+records with no delay and keep alive until \\[keyboard-quit] pressed."
   (interactive (list (binky--mark-read "Mark: " current-prefix-arg)
                      current-prefix-arg))
   (if (binky--mark-get mark)
 	  (binky--mark-jump mark)
-    (if (eq (binky--mark-type mark) 'mannual)
+    (if (eq (binky--mark-type mark) 'manual)
         (binky--mark-add mark)
       (binky--mark-delete mark)))
   (when keep-alive
