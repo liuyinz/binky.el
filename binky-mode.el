@@ -286,7 +286,7 @@ MARK is a lowercase letter between a-z.  INFO is a marker or a list of form
 (defun binky--log (&rest args)
   "Print log into `binky-debug-buffer' about ARGS.
 ARGS format is as same as `format' command."
-  (with-current-buffer (get-buffer-create binky-debug-buffer t)
+  (with-current-buffer (get-buffer-create binky-debug-buffer)
     (goto-char (point-max))
     (insert "\n")
     (insert (apply #'format args))))
@@ -327,7 +327,7 @@ ARGS format is as same as `format' command."
               major-mode
               (save-excursion
                 (goto-char info)
-                (buffer-substring (pos-bol) (pos-eol)))
+                (buffer-substring (line-beginning-position) (line-end-position)))
               pos))
     record))
 
