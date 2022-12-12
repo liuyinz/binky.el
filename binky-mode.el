@@ -4,7 +4,7 @@
 
 ;; Author: liuyinz <liuyinz95@gmail.com>
 ;; Version: 0.9.0
-;; Package-Requires: ((emacs "28"))
+;; Package-Requires: ((emacs "27"))
 ;; Keywords: convenience
 ;; Homepage: https://github.com/liuyinz/binky-mode
 
@@ -327,7 +327,7 @@ ARGS format is as same as `format' command."
               major-mode
               (save-excursion
                 (goto-char info)
-                (buffer-substring (line-beginning-position) (line-end-position)))
+                (buffer-substring (pos-bol) (pos-eol)))
               pos))
     record))
 
