@@ -327,7 +327,7 @@ ARGS format is as same as `format' command."
               major-mode
               (save-excursion
                 (goto-char info)
-                (buffer-substring (pos-bol) (pos-eol)))
+                (buffer-substring (line-beginning-position) (line-end-position)))
               pos))
     record))
 
@@ -410,7 +410,7 @@ Only when the line MARKER has larger disatance than any"
 
 (defun binky--preview-horizontal-p ()
   "Return non-nil if binky preview buffer in horizontally."
-  (not (null (memq binky-preview-side '(left right)))))
+  (memq binky-preview-side '(left right)))
 
 (defun binky--preview-column ()
   "Return alist of elements (COLUMN . WIDTH) to display preview."
@@ -641,8 +641,6 @@ window regardless.  Press \\[keyboard-quit] to quit."
 		  (if (eq (binky--mark-type) 'quit)
               (keyboard-quit)
             last-input-event))
-	  ;; (when (memq (binky--mark-type) '(auto back manual delete))
-	  ;;   last-input-event))
 	  (and (timerp timer) (cancel-timer timer))
       (when (or (eq (binky--mark-type) 'quit)
                 (null keep-alive))
@@ -691,7 +689,7 @@ records with no delay and keep alive until \\[keyboard-quit] pressed."
       (binky--mark-delete mark)))
   (when keep-alive
     (binky-preview 'force)
-    (call-interactively 'binky-binky)))
+    (call-interactively #'binky-binky)))
 
 (define-minor-mode binky-mode
   "Toggle `binky-mode'.
@@ -702,16 +700,16 @@ you used and marked position."
   :require 'binky-mode
   (if binky-mode
 	  (progn
-        (add-hook 'buffer-list-update-hook 'binky-record-auto-update)
-        (add-hook 'kill-buffer-hook 'binky-record-swap-out)
-        (add-hook 'find-file-hook 'binky-record-swap-in)
+        (add-hook 'buffer-list-update-hook #'binky-record-auto-update)
+        (add-hook 'kill-buffer-hook #'binky-record-swap-out)
+        (add-hook 'find-file-hook #'binky-record-swap-in)
         (when (eq binky-record-sort-by 'frequency)
           (setq binky-frequency-timer
 			    (run-with-idle-timer binky-frequency-idle
 								     t #'binky--frequency-increase))))
-    (remove-hook 'buffer-list-update-hook 'binky-record-auto-update)
-    (remove-hook 'kill-buffer-hook 'binky-record-swap-out)
-    (remove-hook 'find-file-hook 'binky-record-swap-in)
+    (remove-hook 'buffer-list-update-hook #'binky-record-auto-update)
+    (remove-hook 'kill-buffer-hook #'binky-record-swap-out)
+    (remove-hook 'find-file-hook #'binky-record-swap-in)
     (when (eq binky-record-sort-by 'frequency)
       (cancel-timer binky-frequency-timer)
       (setq binky-frequency-timer nil))))
