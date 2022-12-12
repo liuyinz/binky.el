@@ -255,7 +255,7 @@ If nil, disable the highlight feature."
 (defvar binky-alist nil
   "List of records (MARK . INFO) set and updated by manual.
 MARK is a lowercase letter between a-z.  INFO is a marker or a list of form
- (filename line major-mode context position) use to stores point information.")
+ (filename line mode context position) use to stores point information.")
 
 (defvar binky-auto-alist nil
   "Alist of records (MARK . MARKER), set and updated automatically.")

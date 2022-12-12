@@ -6,10 +6,8 @@ on:
   push:
     paths-ignore:
       - "**.md"
-      - "**.org"
       - "image/*"
-      - ".dir-locals.el"
-    branches: [master, "ci/**"]
+    branches: master
 
 jobs:
   build:
