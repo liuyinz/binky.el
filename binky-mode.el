@@ -87,7 +87,7 @@ marks.  Letters, digits, punctuation, etc.  If nil, disable the feature."
 
 (defcustom binky-record-distance 5
   "Maxmium distance in lines count bwtween positions to be considered equal."
-  :type 'number
+  :type 'integer
   :group 'binky)
 
 (defcustom binky-record-prune nil
@@ -161,12 +161,11 @@ HORIZONTAL used for `left' and `right'.
 If it's is nil, then COLUMN would not be displayed.
 If it's 0, the COLUMN would not be truncated.
 Usually, `context' column should be at the end and not truncated."
-  ;; :type '(list symbol (choice number (const nil)) (choice number (const nil)))
   :type '(alist
           :key-type symbol
           :options '(mark name line mode context)
-		  :value-type '(group (choice number (const nil))
-							  (choice number (const nil))))
+		  :value-type '(group (choice integer (const nil))
+							  (choice integer (const nil))))
   :group 'binky)
 
 (defcustom binky-preview-ellipsis ".."
@@ -510,7 +509,7 @@ popup the window on the side `binky-preview-side'."
 				 (dup (and back (rassoc (cdr back) (cdr final)))))
             (erase-buffer)
 			;; insert header if non-nil
-			(when (and (cl-some #'numberp (mapcar #'cdr (binky--preview-column)))
+			(when (and (cl-some #'integerp (mapcar #'cdr (binky--preview-column)))
 					   binky-preview-show-header)
 			  (insert (binky--preview-header)))
 			(when dup
