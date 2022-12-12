@@ -634,15 +634,15 @@ window regardless.  Press \\[keyboard-quit] to quit."
 		         (run-with-timer binky-preview-delay nil #'binky-preview))))
     (unwind-protect
         (progn
-		  (while (not (memq (binky--mark-type
-					         (read-key (propertize prompt 'face 'minibuffer-prompt)))
-                            '(quit auto back manual delete)))
-            (when (eq (binky--mark-type) 'help)
-              (binky-preview)))
-		  (when (eq (binky--mark-type) 'quit)
-            (keyboard-quit))
-		  (when (memq (binky--mark-type) '(auto back manual delete))
-			last-input-event))
+		  (while (memq (binky--mark-type
+					    (read-key (propertize prompt 'face 'minibuffer-prompt)))
+                       '(help nil))
+            (and (eq (binky--mark-type) 'help) (binky-preview)))
+		  (if (eq (binky--mark-type) 'quit)
+              (keyboard-quit)
+            last-input-event))
+	  ;; (when (memq (binky--mark-type) '(auto back manual delete))
+	  ;;   last-input-event))
 	  (and (timerp timer) (cancel-timer timer))
       (when (or (eq (binky--mark-type) 'quit)
                 (null keep-alive))
