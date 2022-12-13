@@ -189,13 +189,29 @@ If nil, disable the highlight feature."
   :type '(choice number (const :tag "Disable highlight" nil))
   :group 'binky)
 
+(defcustom binky-margin-string "\x2691"
+  "Which string to show as margin indicator.
+If nil, mark character would be used instead."
+  ;; "\x2590" => "▐"
+  ;; "\x2665" => "♥"
+  ;; "\x2630" => "☰"
+  ;; "\x2691" => "⚑"
+  :type '(choice string (const :tag "Use mark character" nil))
+  :group 'binky)
+
+(defcustom binky-margin-side 'left
+  "Which side to show margin indicator."
+  :type '(choice (const left)
+                 (const right))
+  :group 'binky)
+
 (defface binky-preview-header
   '((t :inherit font-lock-constant-face :underline t))
   "Face used to highlight the header in preview buffer."
   :group 'binky)
 
 (defface binky-preview-column-mark-auto
-  '((t :inherit font-lock-function-name-face :bold t))
+  '((t :inherit font-lock-function-name-face :bold t :inverse-video nil))
   "Face used to highlight the auto mark of record in preview buffer."
   :group 'binky)
 
@@ -249,6 +265,12 @@ If nil, disable the highlight feature."
   "Face used to highlight the line already record."
   :group 'binky)
 
+(defface binky-margin
+  '((t :inherit binky-preview-column-mark
+       :inverse-video nil))
+  "Face used to highlight the mark of record in preview buffer."
+  :group 'binky)
+
 ;;; Variables
 
 (defvar binky-alist nil
@@ -276,11 +298,18 @@ MARK is a lowercase letter between a-z.  INFO is a marker or a list of form
 (defvar binky-preview-buffer "*binky-preview*"
   "Buffer used to preview records.")
 
-(defvar-local binky-overlay nil
-  "Overlay used to highlight the line operated on.")
-
 (defvar binky-debug-buffer "*binky-debug-log*"
   "Buffer used to debug.")
+
+(defvar binky-alist-update-hook nil
+  "Hook run when the `binky-alist' changes.")
+
+(defvar-local binky-highlight-overlay nil
+  "Overlay used to highlight the line operated on.")
+
+(defvar binky-margin-spec-cache nil)
+
+(defvar-local binky-margin-width-orig nil)
 
 ;;; Functions
 
@@ -392,22 +421,29 @@ Only when the line MARKER has larger disatance than any"
 
 (defun binky-record-swap-out ()
   "Turn record from marker into list of properties when a buffer is killed."
-  (dolist (record binky-alist)
-    (when-let* ((info (cdr record))
-                ((markerp info))
-                ((eq (marker-buffer info) (current-buffer))))
-      (if (and buffer-file-name
-               (null binky-record-prune))
-	      (setcdr record (cdr (binky--record-normalized record)))
-        (delete record binky-alist)))))
+  (let ((orig (copy-tree binky-alist)))
+    (dolist (record binky-alist)
+      (when-let* ((info (cdr record))
+                  ((markerp info))
+                  ((eq (marker-buffer info) (current-buffer))))
+
+        (if (and buffer-file-name
+                 (null binky-record-prune))
+	        (setcdr record (cdr (binky--record-normalized record)))
+          (delete record binky-alist))))
+    (unless (equal orig binky-alist)
+      (run-hooks 'binky-alist-update-hook))))
 
 (defun binky-record-swap-in ()
   "Turn record from list of infos into marker when a buffer is reopened."
-  (dolist (record binky-alist)
-    (when-let* ((info (cdr record))
-                ((not (markerp info)))
-                ((equal (car info) buffer-file-name)))
-      (setcdr record (set-marker (make-marker) (car (last info)))))))
+  (let ((orig (copy-tree binky-alist)))
+    (dolist (record binky-alist)
+      (when-let* ((info (cdr record))
+                  ((not (markerp info)))
+                  ((equal (car info) buffer-file-name)))
+        (setcdr record (set-marker (make-marker) (car (last info))))))
+    (unless (equal orig binky-alist)
+      (run-hooks 'binky-alist-update-hook))))
 
 (defun binky--preview-horizontal-p ()
   "Return non-nil if binky preview buffer in horizontally."
@@ -529,14 +565,14 @@ popup the window on the side `binky-preview-side'."
 		     (> binky-highlight-duration 0))
     (let ((beg (line-beginning-position))
           (end (line-beginning-position 2)))
-      (if binky-overlay
-          (move-overlay binky-overlay beg end)
-	    (setq binky-overlay (make-overlay beg end)))
-	  (overlay-put binky-overlay
+      (if binky-highlight-overlay
+          (move-overlay binky-highlight-overlay beg end)
+	    (setq binky-highlight-overlay (make-overlay beg end)))
+	  (overlay-put binky-highlight-overlay
                    'face
                    (intern (concat "binky-highlight-" (symbol-name cmd)))))
     (sit-for binky-highlight-duration)
-    (delete-overlay binky-overlay)))
+    (delete-overlay binky-highlight-overlay)))
 
 (defun binky--message (mark status)
   "Echo information about MARK according to STATUS."
@@ -586,6 +622,7 @@ The `delete' means to delete existing mark by uppercase."
    (t
     (binky--highlight 'add)
     (setf (alist-get mark binky-alist) (point-marker))
+    (run-hooks 'binky-alist-update-hook)
     (and binky-mark-overwrite
          (binky--message mark 'overwrite)))))
 
@@ -604,7 +641,8 @@ The `delete' means to delete existing mark by uppercase."
           (with-current-buffer (marker-buffer info)
             (goto-char info)
             (binky--highlight 'delete))))
-	  (setq binky-alist (assoc-delete-all mark binky-alist))))))
+	  (setq binky-alist (assoc-delete-all mark binky-alist))
+      (run-hooks 'binky-alist-update-hook)))))
 
 (defun binky--mark-jump (mark)
   "Jump to point according to (MARK . INFO) in records."
@@ -650,6 +688,46 @@ window regardless.  Press \\[keyboard-quit] to quit."
                (win (get-buffer-window buf)))
           (and (window-live-p win) (delete-window win))
           (and (get-buffer buf) (kill-buffer buf)))))))
+
+(defun binky--margin-spec (&optional mark)
+  "Genrate and return margin display string according to MARK if provided."
+  (or (and binky-margin-string binky-margin-spec-cache)
+      (setq binky-margin-spec-cache
+            (propertize
+             " "
+             'display
+             `((margin ,(intern (format "%s-margin"
+                                        binky-margin-side)))
+               ,(propertize (or binky-margin-string (char-to-string mark))
+                            'face 'binky-margin))))))
+
+(defun binky--margin-remove (&optional beg end)
+  "Remove binky overlays between BEG and END.
+BEG and END default respectively to the beginning and end of the buffer."
+  (save-restriction
+    (widen)
+    (dolist (o (overlays-in (or beg (point-min)) (or end (point-max))))
+      (when (overlay-get o 'binky) (delete-overlay o)))))
+
+(defun binky-margin-update ()
+  "Toggle displaying `binky-mode' indicators on the margin."
+  (dolist (buf (buffer-list))
+    (with-current-buffer buf
+      ;; delete overlays
+      (binky--margin-remove)
+      (and binky-mode binky-margin-mode
+           (or binky-margin-local-mode (binky-margin-local-mode 1)))))
+  (when (and binky-mode binky-margin-mode)
+    ;; update overlays
+    (mapc (lambda (x)
+            (let ((mark (car x))
+                  (buf (marker-buffer (cdr x)))
+                  (pos (marker-position (cdr x))))
+              (with-current-buffer buf
+                (let ((ov (make-overlay pos pos)))
+                  (overlay-put ov 'binky t)
+                  (overlay-put ov 'before-string (binky--margin-spec mark))))))
+          (cl-remove-if-not (lambda (x) (markerp (cdr x))) binky-alist))))
 
 ;;; Commands
 
@@ -703,13 +781,13 @@ records with no delay and keep alive until \\[keyboard-quit] pressed."
     (binky-preview 'force)
     (call-interactively #'binky-binky)))
 
+;;;###autoload
 (define-minor-mode binky-mode
   "Toggle `binky-mode'.
 This global minor mode allows you to jump easily between buffers
 you used and marked position."
   :group 'binky
   :global t
-  :require 'binky-mode
   (if binky-mode
 	  (progn
         (add-hook 'buffer-list-update-hook #'binky-record-auto-update)
@@ -725,6 +803,38 @@ you used and marked position."
     (when (eq binky-record-sort-by 'frequency)
       (cancel-timer binky-frequency-timer)
       (setq binky-frequency-timer nil))))
+
+;;;###autoload
+(define-minor-mode binky-margin-mode
+  "Toggle displaying `binky-mode' indicators on the margin."
+  :lighter ""
+  :global t
+  (if binky-margin-mode
+      (progn
+        (add-hook 'binky-alist-update-hook #'binky-margin-update)
+        (add-hook 'binky-mode-hook #'binky-margin-update))
+    (remove-hook 'binky-alist-update-hook #'binky-margin-update)
+    (remove-hook 'binky-mode-hook #'binky-margin-update))
+  (dolist (buf (buffer-list))
+    (with-current-buffer buf
+      (binky-margin-local-mode (if binky-margin-mode 1 -1))))
+  (binky-margin-update))
+
+;;;###autoload
+(define-minor-mode binky-margin-local-mode
+  "Toggle displaying `binky-mode' indicators on the margin locally.
+You probably shouldn't use this function directly."
+  :lighter ""
+  (let ((width-var (intern (format "%s-margin-width" binky-margin-side))))
+    (if binky-margin-local-mode
+        (progn
+          (setq-local binky-margin-width-orig width-var)
+          (setq width-var 1))
+      (setq width-var binky-margin-width-orig)
+      (setq binky-margin-width-orig nil)))
+  (dolist (win (get-buffer-window-list))
+    (set-window-buffer win (current-buffer))))
+(put 'binky-margin-local-mode 'completion-predicate #'ignore)
 
 (provide 'binky-mode)
 ;;; binky-mode.el ends here

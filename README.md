@@ -103,6 +103,7 @@ Enjoy it.
 
 - [x] Avoid duplicated records added
 - [ ] Buffer margin indicator support
+- [ ] Support consult- interface
 - [ ] More sorting strategy: frecency, duration
 
 ## License
