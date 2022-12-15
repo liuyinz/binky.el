@@ -259,6 +259,8 @@ MARK is a lowercase letter between a-z.  INFO is a marker or a list of form
 (defvar binky-auto-alist nil
   "Alist of records (MARK . MARKER), set and updated automatically.")
 
+(defvar binky-auto-toggle nil)
+
 (defvar binky-back-record nil
   "Record of last position before `binky-jump', set and updated automatically.")
 
@@ -479,11 +481,12 @@ Only when the line MARKER has larger disatance than any"
   "Preview records of marked positions in `binky-preview-buffer'.
 When there is no window currently showing the buffer or FORCE is non-nil,
 popup the window on the side `binky-preview-side'."
-  (let ((total (remove nil
-					   (cons binky-back-record
-                             (if binky-preview-auto-first
-                                 (append binky-auto-alist binky-alist)
-							   (append binky-alist binky-auto-alist))))))
+  (let* ((auto-now (and binky-mark-auto binky-auto-alist))
+         (total (remove nil
+					    (cons binky-back-record
+                              (if binky-preview-auto-first
+                                  (append auto-now binky-alist)
+							    (append binky-alist auto-now))))))
     (when (or force
 			  (not (get-buffer-window binky-preview-buffer)))
 	  (with-current-buffer-window
@@ -565,7 +568,7 @@ The `delete' means to delete existing mark by uppercase."
   "Return INFO if (MARK . INFO) found in records, or return nil."
   (alist-get mark (append (list binky-back-record)
                           binky-alist
-                          binky-auto-alist)))
+                          (and binky-mark-auto binky-auto-alist))))
 
 (defun binky--mark-add (mark)
   "Add (MARK . MARKER) into records."
@@ -649,6 +652,16 @@ window regardless.  Press \\[keyboard-quit] to quit."
           (and (get-buffer buf) (kill-buffer buf)))))))
 
 ;;; Commands
+
+;;;###autoload
+(defun binky-auto-toggle ()
+  "Toggle whether enable auto mark feature or not."
+  (interactive)
+  (if binky-mark-auto
+      (setq binky-auto-toggle binky-mark-auto
+            binky-mark-auto nil)
+    (setq binky-mark-auto binky-auto-toggle
+          binky-auto-toggle nil)))
 
 ;;;###autoload
 (defun binky-add (mark)
