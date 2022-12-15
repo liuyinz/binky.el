@@ -33,9 +33,15 @@ same mechanism like `point-to-register` but with an enhanced experience.
 
 ![binky with preview](image/binky-preview.png)
 
-`?` or `C-h` for popup preview mannually
+`?` or `C-h` for popup preview mannually, `q`, `C-g` or `escape` for quit
 
-`q`, `C-g` or `escape` for quit
+- Call `M-x binky-margin-mdoe`
+
+![margin with sign](image/margin-with-sign.png)
+
+- Or use mark as indicator, `(setq binky-margin-string nil)`
+
+![margin with mark](image/margin-with-mark.png)
 
 ## Install
 
@@ -66,12 +72,12 @@ Install with `M-x package-install` <kbd>RET</kbd> `binky-mode` from within Emacs
   :hook (after-init-hook . binky-mode))
 ```
 
-- `binky-add`    : add current positon to records
+- `binky-add` : add current positon to records
 - `binky-delete` : delete existed position from records
-- `binky-jump`   : jump to position in records
-- `binky-binky`  : one command to rule all. With `C-u` prefix, keep editing untill quit 
-- `binky-margin-mode`  : toggle to enable or disable margin indicator feature
-- `binky-auto-toggle`  : toggle to enable or disable auto-mark feature
+- `binky-jump` : jump to position in records
+- `binky-binky` : one command to rule all. With `C-u` prefix, keep editing untill quit
+- `binky-margin-mode` : toggle to enable or disable margin indicator feature
+- `binky-auto-toggle` : toggle to enable or disable auto-mark feature
 
 ## Customization
 
@@ -85,10 +91,12 @@ A lot of options are provided. See docstrings in file.
 ## Comparison
 
 - [Dogears](https://github.com/alphapapa/dogears.el)
+
   - Bookmark style record
   - More infomations: relevance, within, directory, etc
 
 - [Binky-mode](https://github.com/liuyinz/binky-mode)
+
   - Register style record
   - Vim-like mark and jump
   - Flexible and customizable
