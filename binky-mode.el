@@ -221,7 +221,7 @@ If nil, mark character would be used instead."
   :group 'binky)
 
 (defface binky-preview-column-mark
-  '((t :inherit font-lock-variable-name-face :bold t))
+  '((t :inherit font-lock-keyword-face :bold t))
   "Face used to highlight the mark of record in preview buffer."
   :group 'binky)
 
@@ -231,7 +231,7 @@ If nil, mark character would be used instead."
   :group 'binky)
 
 (defface binky-preview-column-line
-  '((t :inherit font-lock-keyword-face))
+  '((t :inherit font-lock-variable-name-face))
   "Face used to highlight the line number of record in preview buffer."
   :group 'binky)
 
