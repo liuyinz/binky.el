@@ -70,6 +70,8 @@ Install with `M-x package-install` <kbd>RET</kbd> `binky-mode` from within Emacs
 - `binky-delete` : delete existed position from records
 - `binky-jump`   : jump to position in records
 - `binky-binky`  : one command to rule all. With `C-u` prefix, keep editing untill quit 
+- `binky-margin-mode`  : toggle to enable or disable margin indicator feature
+- `binky-auto-toggle`  : toggle to enable or disable auto-mark feature
 
 ## Customization
 
@@ -102,8 +104,8 @@ Enjoy it.
 ## Todo
 
 - [x] Avoid duplicated records added
-- [ ] Buffer margin indicator support
-- [ ] Support consult- interface
+- [x] Buffer margin indicator support
+- [ ] Support completing-read interface
 - [ ] More sorting strategy: frecency, duration
 
 ## License

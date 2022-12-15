@@ -710,7 +710,8 @@ BEG and END default respectively to the beginning and end of the buffer."
       (when (overlay-get o 'binky) (delete-overlay o)))))
 
 (defun binky-margin-update ()
-  "Toggle displaying `binky-mode' indicators on the margin."
+  "Update margin indicators if needed.
+If `binky-margin-mode' is nil, delete all."
   (dolist (buf (buffer-list))
     (with-current-buffer buf
       ;; delete overlays
@@ -806,7 +807,7 @@ you used and marked position."
 
 ;;;###autoload
 (define-minor-mode binky-margin-mode
-  "Toggle displaying `binky-mode' indicators on the margin."
+  "Toggle displaying indicator on the margin."
   :lighter ""
   :global t
   (if binky-margin-mode
@@ -822,7 +823,7 @@ you used and marked position."
 
 ;;;###autoload
 (define-minor-mode binky-margin-local-mode
-  "Toggle displaying `binky-mode' indicators on the margin locally.
+  "Toggle displaying indicators on the margin locally.
 You probably shouldn't use this function directly."
   :lighter ""
   (let ((width-var (intern (format "%s-margin-width" binky-margin-side))))
