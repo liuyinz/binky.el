@@ -81,12 +81,13 @@ Install with `M-x package-install` <kbd>RET</kbd> `binky-mode` from within Emacs
 
 ## Customization
 
-A lot of options are provided. See docstrings in file.
+A lot of options are provided. See docstrings in defcustoms.
 
 ## Feature
 
-- Better UI experience than `register-to-point`, such as preview customization and jump highlight
+- Better UI experience than `register-to-point`, such as preview customization, jump highlight and margin indicator
 - Integration with buffers switch, and more sorting strategies are provided now and in future
+- Vim-like mark and jump style.
 
 ## Comparison
 
@@ -102,18 +103,15 @@ A lot of options are provided. See docstrings in file.
   - Flexible and customizable
 
 I have used dogears for several months, and it's great in most features except so many information
-I don't need. A better and avy-like jumping system is the top priority for me.
-
-During time of using vim, what I missed most is [Vim-marks](https://vim.fandom.com/wiki/Using_marks). However,
-evil is too heavy, so I write `binky-mode` to imitate part of features.
+I don't need. A better and [Vim-marks](https://vim.fandom.com/wiki/Using_marks) style jumping system is the top priority for me.
+While evil is too heavy, so I wrote `binky-mode` to imitate parts of features.
 
 Enjoy it.
 
 ## Todo
 
 - [x] Avoid duplicated records added
-- [x] Buffer margin indicator support
-- [ ] Support completing-read interface
+- [x] Margin indicator support
 - [ ] More sorting strategy: frecency, duration
 
 ## License

@@ -212,42 +212,42 @@ If nil, mark character would be used instead."
 
 (defface binky-preview-column-mark-auto
   '((t :inherit font-lock-function-name-face :bold t :inverse-video nil))
-  "Face used to highlight the auto mark of record in preview buffer."
+  "Face used to highlight the auto mark of record in preview."
   :group 'binky)
 
 (defface binky-preview-column-mark-back
   '((t :inherit font-lock-type-face :bold t))
-  "Face used to highlight the back mark of record in preview buffer."
+  "Face used to highlight the back mark of record in preview."
   :group 'binky)
 
 (defface binky-preview-column-mark
   '((t :inherit font-lock-keyword-face :bold t))
-  "Face used to highlight the mark of record in preview buffer."
+  "Face used to highlight the mark of record in preview."
   :group 'binky)
 
 (defface binky-preview-column-name
   '((t :inherit default))
-  "Face used to highlight the name of record in preview buffer."
+  "Face used to highlight the name of record in preview."
   :group 'binky)
 
 (defface binky-preview-column-name-same
   '((t :inherit binky-preview-column-name :underline t))
-  "Face used to highlight the name of record in same buffer in preview buffer."
+  "Face used to highlight the name of record in same buffer in preview."
   :group 'binky)
 
 (defface binky-preview-column-line
   '((t :inherit font-lock-variable-name-face))
-  "Face used to highlight the line number of record in preview buffer."
+  "Face used to highlight the line number of record in preview."
   :group 'binky)
 
 (defface binky-preview-column-mode
   '((t :inherit font-lock-type-face))
-  "Face used to highlight the major mode of record in preview buffer."
+  "Face used to highlight the major mode of record in preview."
   :group 'binky)
 
 (defface binky-preview-shadow
   '((t :inherit font-lock-comment-face))
-  "Face used to highlight whole record of killed buffers in preview buffer."
+  "Face used to highlight whole record of killed buffers in preview."
   :group 'binky)
 
 (defface binky-highlight-add
@@ -307,7 +307,7 @@ MARK is a lowercase letter between a-z.  INFO is a marker or a list of form
   "Buffer used to debug.")
 
 (defvar binky-alist-update-hook nil
-  "Hook run when the `binky-alist' changes.")
+  "Hook run when the variable `binky-alist' changes.")
 
 (defvar-local binky-highlight-overlay nil
   "Overlay used to highlight the line operated on.")
@@ -315,8 +315,11 @@ MARK is a lowercase letter between a-z.  INFO is a marker or a list of form
 (defvar binky-current-buffer nil
   "Buffer where binky command called from.")
 
-(defvar binky-margin-spec-cache nil)
-(defvar-local binky-margin-width-orig nil)
+(defvar binky-margin-spec-cache nil
+  "Cache of margin indicator display string.")
+
+(defvar-local binky-margin-width-orig nil
+  "Default margin width of user setting.")
 
 ;;; Functions
 
