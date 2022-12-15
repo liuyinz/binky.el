@@ -711,7 +711,7 @@ BEG and END default respectively to the beginning and end of the buffer."
 
 (defun binky-margin-update ()
   "Update margin indicators if needed.
-If `binky-margin-mode' is nil, delete all."
+If variable `binky-margin-mode' or variable `binky-mode' is nil, delete all."
   (dolist (buf (buffer-list))
     (with-current-buffer buf
       ;; delete overlays
@@ -784,7 +784,7 @@ records with no delay and keep alive until \\[keyboard-quit] pressed."
 
 ;;;###autoload
 (define-minor-mode binky-mode
-  "Toggle `binky-mode'.
+  "Toggle rabbit-jumping style position changes.
 This global minor mode allows you to jump easily between buffers
 you used and marked position."
   :group 'binky
@@ -808,6 +808,7 @@ you used and marked position."
 ;;;###autoload
 (define-minor-mode binky-margin-mode
   "Toggle displaying indicator on the margin."
+  :group 'binky
   :lighter ""
   :global t
   (if binky-margin-mode
@@ -825,6 +826,7 @@ you used and marked position."
 (define-minor-mode binky-margin-local-mode
   "Toggle displaying indicators on the margin locally.
 You probably shouldn't use this function directly."
+  :group 'binky
   :lighter ""
   (let ((width-var (intern (format "%s-margin-width" binky-margin-side))))
     (if binky-margin-local-mode
