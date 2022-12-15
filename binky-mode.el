@@ -230,6 +230,11 @@ If nil, mark character would be used instead."
   "Face used to highlight the name of record in preview buffer."
   :group 'binky)
 
+(defface binky-preview-column-name-same
+  '((t :inherit binky-preview-column-name :underline t))
+  "Face used to highlight the name of record in same buffer in preview buffer."
+  :group 'binky)
+
 (defface binky-preview-column-line
   '((t :inherit font-lock-variable-name-face))
   "Face used to highlight the line number of record in preview buffer."
@@ -307,8 +312,10 @@ MARK is a lowercase letter between a-z.  INFO is a marker or a list of form
 (defvar-local binky-highlight-overlay nil
   "Overlay used to highlight the line operated on.")
 
-(defvar binky-margin-spec-cache nil)
+(defvar binky-current-buffer nil
+  "Buffer where binky command called from.")
 
+(defvar binky-margin-spec-cache nil)
 (defvar-local binky-margin-width-orig nil)
 
 ;;; Functions
@@ -489,17 +496,23 @@ Only when the line MARKER has larger disatance than any"
              (cond-face (cond
                          (killed 'binky-preview-shadow)
                          ((and (eq x 'mark)
-							   (memq (binky--mark-type (string-to-char (substring y -1))) '(auto back)))
-						  (intern (concat "binky-preview-column-mark-"
-										  (symbol-name (binky--mark-type
-                                                        (string-to-char (substring y -1)))))))
+							   (memq (binky--mark-type
+                                      (string-to-char (substring y -1))) '(auto back)))
+						  (intern (concat
+                                   "binky-preview-column-mark-"
+								   (symbol-name (binky--mark-type
+                                                 (string-to-char (substring y -1)))))))
+                         ((and (eq x 'name)
+                               (equal (file-name-nondirectory
+                                       (buffer-name binky-current-buffer)) y))
+                          'binky-preview-column-name-same)
                          (t nil))))
          (cons x (if (or killed (facep column-face))
                      (propertize y 'face (or cond-face column-face))
 				   y))))
      '(mark name line mode context)
      (list (concat "  " (single-key-description (nth 0 record)))
-		   (file-name-nondirectory (nth 1 record))
+           (file-name-nondirectory (nth 1 record))
 		   (number-to-string (nth 2 record))
 		   (string-remove-suffix "-mode" (symbol-name (nth 3 record)))
 		   (string-trim (nth 4 record))))))
@@ -669,6 +682,7 @@ preview buffer keep alive.
 
 If `help-char' (or a member of `help-event-list') is pressed, display preview
 window regardless.  Press \\[keyboard-quit] to quit."
+  (setq binky-current-buffer (current-buffer))
   (and keep-alive (binky-preview 'force))
   (let ((timer (when (numberp binky-preview-delay)
 		         (run-with-timer binky-preview-delay nil #'binky-preview))))
