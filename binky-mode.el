@@ -382,14 +382,15 @@ ARGS format is as same as `format' command."
       (context (nth 4 record))
       (position (nth 5 record)))))
 
-(defun binky--record-exist-p (marker)
+(defun binky--record-duplicated-p (marker)
   "Return non-nil if MARKER' line uncoverd in records.
 Only when the line MARKER has larger disatance than any"
   (cl-some (lambda (x)
-             (when (markerp (cdr x))
-               (<= (abs (- (binky--record-prop-get (cons nil marker) 'line)
-                           (binky--record-prop-get x 'line)))
-                   binky-record-distance)))
+             (and (markerp (cdr x))
+                  (<= (abs (- (binky--record-prop-get (cons nil marker) 'line)
+                              (binky--record-prop-get x 'line)))
+                      binky-record-distance)
+                  x))
            binky-alist))
 
 (defun binky-record-auto-update ()
@@ -414,7 +415,7 @@ Only when the line MARKER has larger disatance than any"
       ;; delete marker duplicated with `binky-alist'
       (setq result (cl-remove-if (lambda (m)
                                    (let ((binky-record-distance 0))
-                                     (binky--record-exist-p m)))
+                                     (binky--record-duplicated-p m)))
                                  result))
       (cl-case binky-record-sort-by
         (recency
@@ -627,9 +628,13 @@ The `delete' means to delete existing mark by uppercase."
   (cond
    ((eq major-mode 'xwidget-webkit-mode)
     (message "%s is not allowed" major-mode))
-   ((binky--record-exist-p (point-marker))
-    (binky--highlight 'warn)
-    (message "Record already exists."))
+   ((binky--record-duplicated-p (point-marker))
+    (let ((record (binky--record-duplicated-p (point-marker))))
+      (binky--highlight 'warn)
+      (save-excursion
+        (goto-char (cdr record))
+        (binky--highlight 'warn))
+      (binky--message (car record) 'exist)))
    ((not (eq (binky--mark-type mark) 'manual))
     (binky--message mark 'illegal))
    ((and (binky--mark-get mark) (not binky-mark-overwrite))
