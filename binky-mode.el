@@ -74,7 +74,6 @@ marks.  Letters, digits, punctuation, etc.  If nil, disable the feature."
   :type 'boolean
   :group 'binky)
 
-
 (defcustom binky-record-sort-by 'recency
   "Sorting strategy for auto marked buffers."
   :type '(choice (const :tag "Sort by recency" recency)
@@ -593,11 +592,15 @@ popup the window on the side `binky-preview-side'."
 
 (defun binky--message (mark status)
   "Echo information about MARK according to STATUS."
-  (let ((al '((illegal   . "is illegal")
-              (overwrite . "exists and being overwritten")
-              (exist     . "already exists")
-              (non-exist . "doesn't exist"))))
-    (message "Mark %s %s." (single-key-description mark) (alist-get status al))))
+  (let ((message-map '((illegal  . "is illegal")
+                       (overwrite . "is overwritten")
+                       (exist     . "already exists")
+                       (non-exist . "doesn't exist"))))
+    (message "Mark %s %s."
+             (propertize (single-key-description mark t)
+                         'face
+                         'binky-preview-column-mark)
+             (alist-get status message-map))))
 
 (defun binky--mark-type (&optional mark)
   "Return type of MARK or `last-input-event'.
