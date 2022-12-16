@@ -575,7 +575,7 @@ popup the window on the side `binky-preview-side'."
 					(insert (binky--preview-extract record)))
 				  (if dup (cdr final) final))))))))
 
-(defun binky--highlight (cmd)
+(defun binky-highlight (cmd)
   "Highlight the line CMD operated on in `binky-highlight-duration' seconds."
   (when (and (numberp binky-highlight-duration)
 		     (> binky-highlight-duration 0))
@@ -633,18 +633,18 @@ The `delete' means to delete existing mark by uppercase."
     (message "%s is not allowed" major-mode))
    ((binky--record-duplicated-p (point-marker))
     (let ((record (binky--record-duplicated-p (point-marker))))
-      (binky--highlight 'warn)
+      (binky-highlight 'warn)
       (save-excursion
         (goto-char (cdr record))
-        (binky--highlight 'warn))
+        (binky-highlight 'warn))
       (binky--message (car record) 'exist)))
    ((not (eq (binky--mark-type mark) 'manual))
     (binky--message mark 'illegal))
    ((and (binky--mark-get mark) (not binky-mark-overwrite))
-    (binky--highlight 'warn)
+    (binky-highlight 'warn)
     (binky--message mark 'exist))
    (t
-    (binky--highlight 'add)
+    (binky-highlight 'add)
     (setf (alist-get mark binky-alist) (point-marker))
     (run-hooks 'binky-alist-update-hook)
     (and binky-mark-overwrite
@@ -664,7 +664,7 @@ The `delete' means to delete existing mark by uppercase."
         (save-excursion
           (with-current-buffer (marker-buffer info)
             (goto-char info)
-            (binky--highlight 'delete))))
+            (binky-highlight 'delete))))
 	  (setq binky-alist (assoc-delete-all mark binky-alist))
       (run-hooks 'binky-alist-update-hook)))))
 
@@ -679,7 +679,7 @@ The `delete' means to delete existing mark by uppercase."
 			  (goto-char info))
 		  (find-file (car info))
 		  (goto-char (car (last info))))
-        (binky--highlight 'jump)
+        (binky-highlight 'jump)
         (if (characterp binky-mark-back)
             (setq binky-back-record (cons binky-mark-back last))
 		  (setq binky-back-record nil)))
