@@ -3,7 +3,7 @@
 ;; Copyright (C) 2022 liuyinz
 
 ;; Author: liuyinz <liuyinz95@gmail.com>
-;; Version: 0.9.0
+;; Version: 1.0.0
 ;; Package-Requires: ((emacs "26.3"))
 ;; Keywords: convenience
 ;; Homepage: https://github.com/liuyinz/binky-mode
@@ -210,17 +210,23 @@ If nil, mark character would be used instead."
   :group 'binky)
 
 (defface binky-preview-column-mark-auto
-  '((t :inherit font-lock-function-name-face :bold t :inverse-video nil))
+  '((t :inherit font-lock-function-name-face
+       :bold t
+       :inverse-video nil))
   "Face used to highlight the auto mark of record in preview."
   :group 'binky)
 
 (defface binky-preview-column-mark-back
-  '((t :inherit font-lock-type-face :bold t))
+  '((t :inherit font-lock-type-face
+       :bold t
+       :inverse-video nil))
   "Face used to highlight the back mark of record in preview."
   :group 'binky)
 
-(defface binky-preview-column-mark
-  '((t :inherit font-lock-keyword-face :bold t))
+(defface binky-preview-column-mark-manual
+  '((t :inherit font-lock-keyword-face
+       :bold t
+       :inverse-video nil))
   "Face used to highlight the mark of record in preview."
   :group 'binky)
 
@@ -269,12 +275,6 @@ If nil, mark character would be used instead."
   "Face used to highlight the line already record."
   :group 'binky)
 
-(defface binky-margin
-  '((t :inherit binky-preview-column-mark
-       :inverse-video nil))
-  "Face used to highlight the mark of record in preview buffer."
-  :group 'binky)
-
 ;;; Variables
 
 (defvar binky-alist nil
@@ -308,16 +308,19 @@ MARK is a lowercase letter between a-z.  INFO is a marker or a list of form
 (defvar binky-alist-update-hook nil
   "Hook run when the variable `binky-alist' changes.")
 
+(defvar binky-auto-alist-update-hook nil
+  "Hook run when the variable `binky-alist' changes.")
+
+(defvar binky-back-record-update-hook nil
+  "Hook run when the variable `binky-alist' changes.")
+
 (defvar-local binky-highlight-overlay nil
   "Overlay used to highlight the line operated on.")
 
 (defvar binky-current-buffer nil
   "Buffer where binky command called from.")
 
-(defvar binky-margin-spec-cache nil
-  "Cache of margin indicator display string.")
-
-(defvar-local binky-margin-width-orig nil
+(defvar-local binky-margin-width-orig 'unset
   "Default margin width of user setting.")
 
 ;;; Functions
@@ -329,6 +332,18 @@ ARGS format is as same as `format' command."
     (goto-char (point-max))
     (insert "\n")
     (insert (apply #'format args))))
+
+(defun binky--message (mark status)
+  "Echo information about MARK according to STATUS."
+  (let ((message-map '((illegal  . "is illegal")
+                       (overwrite . "is overwritten")
+                       (exist     . "already exists")
+                       (non-exist . "doesn't exist"))))
+    (message "Mark %s %s."
+             (propertize (single-key-description mark t)
+                         'face
+                         'binky-preview-column-mark-manual)
+             (alist-get status message-map))))
 
 (defun binky--regexp-match (lst)
   "Return non-nil if current buffer name match the LST."
@@ -354,7 +369,7 @@ ARGS format is as same as `format' command."
   "Return value of `binky-frequency' of buffer which MARKER points to."
   (or (buffer-local-value 'binky-frequency (marker-buffer marker)) 0))
 
-(defun binky--record-normalized (record)
+(defun binky--record-normalize (record)
   "Return RECORD in normalized style (mark name line mode context position)."
   (if-let* ((info (cdr record))
             ((markerp info))
@@ -372,7 +387,7 @@ ARGS format is as same as `format' command."
 
 (defun binky--record-prop-get (record prop)
   "Return the property PROP of RECORD, or nil if none."
-  (let ((record (binky--record-normalized record)))
+  (let ((record (binky--record-normalize record)))
     (cl-case prop
       (mark (nth 0 record))
       (name (nth 1 record))
@@ -380,6 +395,30 @@ ARGS format is as same as `format' command."
       (mode (nth 3 record))
       (context (nth 4 record))
       (position (nth 5 record)))))
+
+(defun binky--record-aggregate (style)
+  "Return aggregated records accroding to STYLE."
+  (remove
+   nil
+   (cl-case style
+     (sum
+      ;; orderless, non-uniq
+      (append (list binky-back-record)
+              binky-alist
+              (and binky-mark-auto binky-auto-alist)))
+     (preview
+      ;; order, uniq
+      (cons binky-back-record
+            (if binky-preview-auto-first
+                (append binky-auto-alist binky-alist)
+              (append binky-alist binky-auto-alist))))
+     (margin
+      ;; orderless, uniq
+      (cons binky-back-record
+            (cl-remove-if (lambda (x)
+                            (or (not (markerp (cdr x)))
+                                (eq (cdr x) (cdr binky-back-record))))
+                          (append binky-alist binky-auto-alist)))))))
 
 (defun binky--record-duplicated-p (marker)
   "Return non-nil if MARKER' line uncoverd in records.
@@ -397,7 +436,8 @@ Only when the line MARKER has larger disatance than any"
   ;; delete back-record if buffer not exists
   (when (and binky-back-record
              (null (marker-buffer (cdr binky-back-record))))
-    (setq binky-back-record nil))
+    (setq binky-back-record nil)
+    (run-hooks 'binky-back-record-update-hook))
   ;; update auto marked records
   (let* ((marks (remove binky-mark-back binky-mark-auto))
          (len (length marks))
@@ -427,7 +467,8 @@ Only when the line MARKER has larger disatance than any"
         (t nil))
       (setq binky-auto-alist (cl-mapcar (lambda (x y) (cons x y))
                                         marks
-                                        result)))))
+                                        result))
+      (run-hooks 'binky-auto-alist-update-hook))))
 
 (defun binky-record-swap-out ()
   "Turn record from marker into list of properties when a buffer is killed."
@@ -439,7 +480,7 @@ Only when the line MARKER has larger disatance than any"
 
         (if (and buffer-file-name
                  (null binky-record-prune))
-	        (setcdr record (cdr (binky--record-normalized record)))
+	        (setcdr record (cdr (binky--record-normalize record)))
           (delete record binky-alist))))
     (unless (equal orig binky-alist)
       (run-hooks 'binky-alist-update-hook))))
@@ -491,34 +532,27 @@ Only when the line MARKER has larger disatance than any"
 
 (defun binky--preview-propertize (record)
   "Return formatted string for RECORD in preview."
-  (let ((killed (not (markerp (cdr record))))
-        (record (binky--record-normalized record)))
-    (cl-mapcar
-     (lambda (x y)
-	   (let ((column-face (intern (concat "binky-preview-column-" (symbol-name x))))
-             (cond-face (cond
-                         (killed 'binky-preview-shadow)
-                         ((and (eq x 'mark)
-							   (memq (binky--mark-type
-                                      (string-to-char (substring y -1))) '(auto back)))
-						  (intern (concat
-                                   "binky-preview-column-mark-"
-								   (symbol-name (binky--mark-type
-                                                 (string-to-char (substring y -1)))))))
-                         ((and (eq x 'name)
-                               (equal (file-name-nondirectory
-                                       (buffer-name binky-current-buffer)) y))
-                          'binky-preview-column-name-same)
-                         (t nil))))
-         (cons x (if (or killed (facep column-face))
-                     (propertize y 'face (or cond-face column-face))
-				   y))))
-     '(mark name line mode context)
-     (list (concat "  " (single-key-description (nth 0 record)))
-           (file-name-nondirectory (nth 1 record))
-		   (number-to-string (nth 2 record))
-		   (string-remove-suffix "-mode" (symbol-name (nth 3 record)))
-		   (string-trim (nth 4 record))))))
+  (let ((shadow (not (markerp (cdr record))))
+        (record (binky--record-normalize record)))
+    (cons (cons 'mark (concat "  " (binky--mark-propertize (nth 0 record) nil shadow)))
+          (cl-mapcar
+           (lambda (x y)
+	         (let ((column-face (intern (concat "binky-preview-column-"
+                                                (symbol-name x))))
+                   (cond-face (cond
+                               (shadow 'binky-preview-shadow)
+                               ((and (eq x 'name)
+                                     (equal (file-name-nondirectory
+                                             (buffer-name binky-current-buffer)) y))
+                                'binky-preview-column-name-same)
+                               (t nil))))
+               (cons x (if (or shadow (facep column-face))
+                           (propertize y 'face (or cond-face column-face)) y))))
+           '(name line mode context)
+           (list (file-name-nondirectory (nth 1 record))
+		         (number-to-string (nth 2 record))
+		         (string-remove-suffix "-mode" (symbol-name (nth 3 record)))
+		         (string-trim (nth 4 record)))))))
 
 (defun binky--preview-header ()
   "Return formatted string of header for preview."
@@ -533,47 +567,90 @@ Only when the line MARKER has larger disatance than any"
   "Preview records of marked positions in `binky-preview-buffer'.
 When there is no window currently showing the buffer or FORCE is non-nil,
 popup the window on the side `binky-preview-side'."
-  (let* ((auto-now (and binky-mark-auto binky-auto-alist))
-         (total (remove nil
-					    (cons binky-back-record
-                              (if binky-preview-auto-first
-                                  (append auto-now binky-alist)
-							    (append binky-alist auto-now))))))
-    (when (or force
-			  (not (get-buffer-window binky-preview-buffer)))
-	  (with-current-buffer-window
-		  binky-preview-buffer
-		  (cons 'display-buffer-in-side-window
-				(append
-				 `((dedicated . t)
-				   (side      . ,binky-preview-side))
-				 (if (binky--preview-horizontal-p)
-					 '((window-width  . fit-window-to-buffer)
-					   (preserve-size . (t . t)))
-				   '((window-height . fit-window-to-buffer)
-					 (preserve-size . (nil . t))))))
-		  nil
-		(progn
-		  (setq cursor-in-non-selected-windows nil
-				mode-line-format nil
-				truncate-lines t)
-		  (setq-local fit-window-to-buffer-horizontally t)
-		  (let* ((final (mapcar #'binky--preview-propertize total))
-				 (back (and binky-back-record
-							(binky--preview-propertize binky-back-record)))
-				 (dup (and back (rassoc (cdr back) (cdr final)))))
-            (erase-buffer)
-			;; insert header if non-nil
-			(when (and (cl-some #'integerp (mapcar #'cdr (binky--preview-column)))
-					   binky-preview-show-header)
-			  (insert (binky--preview-header)))
-			(when dup
-			  (setf (cdar dup)
-					(concat (substring (cdar back) -1)
-							(substring (cdar dup) 1))))
-			(mapc (lambda (record)
-					(insert (binky--preview-extract record)))
-				  (if dup (cdr final) final))))))))
+  (when (or force
+			(not (get-buffer-window binky-preview-buffer)))
+	(with-current-buffer-window
+		binky-preview-buffer
+		(cons 'display-buffer-in-side-window
+			  (append
+			   `((dedicated . t)
+				 (side      . ,binky-preview-side))
+			   (if (binky--preview-horizontal-p)
+				   '((window-width  . fit-window-to-buffer)
+					 (preserve-size . (t . t)))
+				 '((window-height . fit-window-to-buffer)
+				   (preserve-size . (nil . t))))))
+		nil
+	  (progn
+		(setq cursor-in-non-selected-windows nil
+			  mode-line-format nil
+			  truncate-lines t)
+		(setq-local fit-window-to-buffer-horizontally t)
+		(let* ((total (mapcar #'binky--preview-propertize
+                              (binky--record-aggregate 'preview)))
+			   (back (and binky-back-record
+						  (binky--preview-propertize binky-back-record)))
+			   (dup (and back (rassoc (cdr back) (cdr total)))))
+          (erase-buffer)
+		  ;; insert header if non-nil
+		  (when (and (cl-some #'integerp (mapcar #'cdr (binky--preview-column)))
+					 binky-preview-show-header)
+			(insert (binky--preview-header)))
+		  (when dup
+			(setf (cdar dup)
+				  (concat (substring (cdar back) -1)
+						  (substring (cdar dup) 1))))
+		  (mapc (lambda (record)
+				  (insert (binky--preview-extract record)))
+				(if dup (cdr total) total)))))))
+
+(defun binky--margin-spec (&optional mark)
+  "Return margin display string according to MARK if provided."
+  (propertize " " 'display
+              `((margin ,(intern (format "%s-margin" binky-margin-side)))
+                ,(binky--mark-propertize mark binky-margin-string))))
+
+(defun binky--margin-setup (&optional restore)
+  "Setup margin display of each buffer for `binky-margin-mode'.
+If RESTORE is non-nil, restore to default margin."
+  (dolist (buf (buffer-list))
+    (with-current-buffer buf
+      (when (xor restore (eq binky-margin-width-orig 'unset))
+        (let ((width-var (intern (format "%s-margin-width" binky-margin-side))))
+          (if restore
+              (progn
+                (setq width-var binky-margin-width-orig)
+                (setq binky-margin-width-orig 'unset))
+            (setq-local binky-margin-width-orig width-var)
+            (setq width-var 1)))
+        (dolist (win (get-buffer-window-list))
+          (set-window-buffer win (current-buffer)))))))
+
+(defun binky--margin-remove (&optional beg end)
+  "Remove binky overlays between BEG and END.
+BEG and END default respectively to the beginning and end of each buffer."
+  (dolist (buf (buffer-list))
+    (with-current-buffer buf
+      (save-restriction
+        (widen)
+        (dolist (o (overlays-in (or beg (point-min)) (or end (point-max))))
+          (when (overlay-get o 'binky) (delete-overlay o)))))))
+
+(defun binky-margin-update ()
+  "Update margin indicators if needed.
+If variable `binky-margin-mode' or variable `binky-mode' is nil, delete all."
+  ;; delete overlays
+  (binky--margin-remove)
+  (when (and binky-mode binky-margin-mode)
+    (binky--margin-setup)
+    ;; update overlays
+    (mapc (lambda (x)
+            (let ((pos (marker-position (cdr x))))
+              (with-current-buffer (marker-buffer (cdr x))
+                (let ((ov (make-overlay pos pos)))
+                  (overlay-put ov 'binky t)
+                  (overlay-put ov 'before-string (binky--margin-spec (car x)))))))
+          (binky--record-aggregate 'margin))))
 
 (defun binky-highlight (cmd)
   "Highlight the line CMD operated on in `binky-highlight-duration' seconds."
@@ -590,17 +667,16 @@ popup the window on the side `binky-preview-side'."
     (sit-for binky-highlight-duration)
     (delete-overlay binky-highlight-overlay)))
 
-(defun binky--message (mark status)
-  "Echo information about MARK according to STATUS."
-  (let ((message-map '((illegal  . "is illegal")
-                       (overwrite . "is overwritten")
-                       (exist     . "already exists")
-                       (non-exist . "doesn't exist"))))
-    (message "Mark %s %s."
-             (propertize (single-key-description mark t)
-                         'face
-                         'binky-preview-column-mark)
-             (alist-get status message-map))))
+(defun binky--mark-propertize (mark &optional replace-string shadow)
+  "Return propertized string of MARK character.
+If REPLACE-STRING is non-nil, return it rather than MARK.  If SHADOW is non-nil,
+face `binky-preview-shadow' is used instead."
+  (propertize (or replace-string (single-key-description mark t))
+              'face
+              (if shadow
+                  'binky-preview-shadow
+                (intern (concat "binky-preview-column-mark-"
+                                (symbol-name (binky--mark-type mark)))))))
 
 (defun binky--mark-type (&optional mark)
   "Return type of MARK or `last-input-event'.
@@ -622,9 +698,7 @@ The `delete' means to delete existing mark by uppercase."
 
 (defun binky--mark-get (mark)
   "Return INFO if (MARK . INFO) found in records, or return nil."
-  (alist-get mark (append (list binky-back-record)
-                          binky-alist
-                          (and binky-mark-auto binky-auto-alist))))
+  (alist-get mark (binky--record-aggregate 'sum)))
 
 (defun binky--mark-add (mark)
   "Add (MARK . MARKER) into records."
@@ -680,9 +754,9 @@ The `delete' means to delete existing mark by uppercase."
 		  (find-file (car info))
 		  (goto-char (car (last info))))
         (binky-highlight 'jump)
-        (if (characterp binky-mark-back)
-            (setq binky-back-record (cons binky-mark-back last))
-		  (setq binky-back-record nil)))
+        (when (characterp binky-mark-back)
+          (setq binky-back-record (cons binky-mark-back last))
+          (run-hooks 'binky-back-record-update-hook)))
     (binky--message mark 'non-exist)))
 
 (defun binky--mark-read (prompt &optional keep-alive)
@@ -714,58 +788,7 @@ window regardless.  Press \\[keyboard-quit] to quit."
           (and (window-live-p win) (delete-window win))
           (and (get-buffer buf) (kill-buffer buf)))))))
 
-(defun binky--margin-spec (&optional mark)
-  "Genrate and return margin display string according to MARK if provided."
-  (or (and binky-margin-string binky-margin-spec-cache)
-      (setq binky-margin-spec-cache
-            (propertize
-             " "
-             'display
-             `((margin ,(intern (format "%s-margin"
-                                        binky-margin-side)))
-               ,(propertize (or binky-margin-string (char-to-string mark))
-                            'face 'binky-margin))))))
-
-(defun binky--margin-remove (&optional beg end)
-  "Remove binky overlays between BEG and END.
-BEG and END default respectively to the beginning and end of the buffer."
-  (save-restriction
-    (widen)
-    (dolist (o (overlays-in (or beg (point-min)) (or end (point-max))))
-      (when (overlay-get o 'binky) (delete-overlay o)))))
-
-(defun binky-margin-update ()
-  "Update margin indicators if needed.
-If variable `binky-margin-mode' or variable `binky-mode' is nil, delete all."
-  (dolist (buf (buffer-list))
-    (with-current-buffer buf
-      ;; delete overlays
-      (binky--margin-remove)
-      (and binky-mode binky-margin-mode
-           (or binky-margin-local-mode (binky-margin-local-mode 1)))))
-  (when (and binky-mode binky-margin-mode)
-    ;; update overlays
-    (mapc (lambda (x)
-            (let ((mark (car x))
-                  (buf (marker-buffer (cdr x)))
-                  (pos (marker-position (cdr x))))
-              (with-current-buffer buf
-                (let ((ov (make-overlay pos pos)))
-                  (overlay-put ov 'binky t)
-                  (overlay-put ov 'before-string (binky--margin-spec mark))))))
-          (cl-remove-if-not (lambda (x) (markerp (cdr x))) binky-alist))))
-
 ;;; Commands
-
-;;;###autoload
-(defun binky-auto-toggle ()
-  "Toggle whether enable auto mark feature or not."
-  (interactive)
-  (if binky-mark-auto
-      (setq binky-auto-toggle binky-mark-auto
-            binky-mark-auto nil)
-    (setq binky-mark-auto binky-auto-toggle
-          binky-auto-toggle nil)))
 
 ;;;###autoload
 (defun binky-add (mark)
@@ -808,6 +831,18 @@ records with no delay and keep alive until \\[keyboard-quit] pressed."
     (call-interactively #'binky-binky)))
 
 ;;;###autoload
+(defun binky-auto-toggle ()
+  "Toggle whether enable auto mark feature or not."
+  (interactive)
+  (if binky-mark-auto
+      (setq binky-auto-toggle (cons binky-mark-auto binky-auto-alist)
+            binky-mark-auto nil
+            binky-auto-alist nil)
+    (setq binky-mark-auto (car binky-auto-toggle)
+          binky-auto-alist (cdr binky-auto-toggle)
+          binky-auto-toggle nil)))
+
+;;;###autoload
 (define-minor-mode binky-mode
   "Toggle rabbit-jumping style position changes.
 This global minor mode allows you to jump easily between buffers
@@ -838,31 +873,16 @@ you used and marked position."
   :global t
   (if binky-margin-mode
       (progn
+        (add-hook 'binky-mode-hook #'binky-margin-update)
         (add-hook 'binky-alist-update-hook #'binky-margin-update)
-        (add-hook 'binky-mode-hook #'binky-margin-update))
+        (add-hook 'binky-auto-alist-update-hook #'binky-margin-update)
+        (add-hook 'binky-back-record-update-hook #'binky-margin-update))
+    (remove-hook 'binky-mode-hook #'binky-margin-update)
     (remove-hook 'binky-alist-update-hook #'binky-margin-update)
-    (remove-hook 'binky-mode-hook #'binky-margin-update))
-  (dolist (buf (buffer-list))
-    (with-current-buffer buf
-      (binky-margin-local-mode (if binky-margin-mode 1 -1))))
+    (remove-hook 'binky-auto-alist-update-hook #'binky-margin-update)
+    (remove-hook 'binky-back-record-update-hook #'binky-margin-update))
+  (binky--margin-setup (not binky-margin-mode))
   (binky-margin-update))
-
-;;;###autoload
-(define-minor-mode binky-margin-local-mode
-  "Toggle displaying indicators on the margin locally.
-You probably shouldn't use this function directly."
-  :group 'binky
-  :lighter ""
-  (let ((width-var (intern (format "%s-margin-width" binky-margin-side))))
-    (if binky-margin-local-mode
-        (progn
-          (setq-local binky-margin-width-orig width-var)
-          (setq width-var 1))
-      (setq width-var binky-margin-width-orig)
-      (setq binky-margin-width-orig nil)))
-  (dolist (win (get-buffer-window-list))
-    (set-window-buffer win (current-buffer))))
-(put 'binky-margin-local-mode 'completion-predicate #'ignore)
 
 (provide 'binky-mode)
 ;;; binky-mode.el ends here
