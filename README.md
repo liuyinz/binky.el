@@ -66,10 +66,11 @@ Install with `M-x package-install` <kbd>RET</kbd> `binky-mode` from within Emacs
 ;; Directly
 (require 'binky-mode)
 (binky-mode)
+(binky-margin-mode)
 
 ;; Or with `use-package`, etc
 (use-package binky-mode
-  :hook (after-init-hook . binky-mode))
+  :hook (after-init-hook . (lambda () (binky-mode) (binky-margin-mode))))
 ```
 
 - `binky-add` : add current positon to records
