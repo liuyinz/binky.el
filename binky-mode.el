@@ -611,7 +611,7 @@ popup the window on the side `binky-preview-side'."
                 ,(binky--mark-propertize mark binky-margin-string))))
 
 (defun binky--margin-setup (&optional restore)
-  "Setup margin display of each buffer for `binky-margin-mode'.
+  "Setup margin display of each buffer for command `binky-margin-mode'.
 If RESTORE is non-nil, restore to default margin."
   (dolist (buf (buffer-list))
     (with-current-buffer buf
@@ -626,16 +626,17 @@ If RESTORE is non-nil, restore to default margin."
         (dolist (win (get-buffer-window-list))
           (set-window-buffer win (current-buffer)))))))
 
-(defun binky--margin-remove (&optional beg end)
+(defun binky--margin-remove ()
   "Remove binky overlays between BEG and END.
 BEG and END default respectively to the beginning and end of each buffer."
   (dolist (buf (buffer-list))
     (with-current-buffer buf
       (save-restriction
         (widen)
-        (dolist (o (overlays-in (or beg (point-min)) (or end (point-max))))
-          (when (overlay-get o 'binky) (delete-overlay o)))))))
+        (dolist (ov (overlays-in (point-min) (point-max)))
+          (when (overlay-get ov 'binky) (delete-overlay ov)))))))
 
+;; TODO split to update three alists separate
 (defun binky-margin-update ()
   "Update margin indicators if needed.
 If variable `binky-margin-mode' or variable `binky-mode' is nil, delete all."
