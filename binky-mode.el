@@ -610,48 +610,31 @@ popup the window on the side `binky-preview-side'."
               `((margin ,(intern (format "%s-margin" binky-margin-side)))
                 ,(binky--mark-propertize mark binky-margin-string))))
 
-(defun binky--margin-setup (&optional restore)
-  "Setup margin display of each buffer for command `binky-margin-mode'.
-If RESTORE is non-nil, restore to default margin."
-  (dolist (buf (buffer-list))
-    (with-current-buffer buf
-      (when (xor restore (eq binky-margin-width-orig 'unset))
-        (let ((width-var (intern (format "%s-margin-width" binky-margin-side))))
-          (if restore
-              (progn
-                (setq width-var binky-margin-width-orig)
-                (setq binky-margin-width-orig 'unset))
-            (setq-local binky-margin-width-orig width-var)
-            (setq width-var 1)))
-        (dolist (win (get-buffer-window-list))
-          (set-window-buffer win (current-buffer)))))))
-
-(defun binky--margin-remove ()
-  "Remove binky overlays between BEG and END.
-BEG and END default respectively to the beginning and end of each buffer."
-  (dolist (buf (buffer-list))
-    (with-current-buffer buf
-      (save-restriction
-        (widen)
-        (dolist (ov (overlays-in (point-min) (point-max)))
-          (when (overlay-get ov 'binky) (delete-overlay ov)))))))
-
-;; TODO split to update three alists separate
-(defun binky-margin-update ()
-  "Update margin indicators if needed.
-If variable `binky-margin-mode' or variable `binky-mode' is nil, delete all."
-  ;; delete overlays
-  (binky--margin-remove)
-  (when (and binky-mode binky-margin-mode)
-    (binky--margin-setup)
-    ;; update overlays
+(defun binky--margin-local-update (&optional update)
+  "Remove and update margin indicators in current buffer if UPDATE is non-nil."
+  ;; delete all overlay in buffer
+  (save-restriction
+    (widen)
+    (dolist (ov (overlays-in (point-min) (point-max)))
+      (when (overlay-get ov 'binky) (delete-overlay ov))))
+  (when update
     (mapc (lambda (x)
-            (let ((pos (marker-position (cdr x))))
-              (with-current-buffer (marker-buffer (cdr x))
-                (let ((ov (make-overlay pos pos)))
-                  (overlay-put ov 'binky t)
-                  (overlay-put ov 'before-string (binky--margin-spec (car x)))))))
+            (when-let* ((marker (cdr x))
+                        (pos (marker-position marker))
+                        ((eq (marker-buffer marker) (current-buffer)))
+                        (ov (make-overlay pos pos)))
+              (overlay-put ov 'binky t)
+              (overlay-put ov 'before-string (binky--margin-spec (car x)))))
           (binky--record-aggregate 'margin))))
+
+(defun binky-margin-update ()
+  "Remove and udpate margin indicators in all buffers if needed."
+  (dolist (buf (buffer-list))
+    (with-current-buffer buf
+      ;; delete overlays
+      (binky--margin-local-update (and (bound-and-true-p binky-mode)
+                                       (bound-and-true-p binky-margin-mode)
+                                       (bound-and-true-p binky-margin-local-mode))))))
 
 (defun binky-highlight (cmd)
   "Highlight the line CMD operated on in `binky-highlight-duration' seconds."
@@ -866,12 +849,31 @@ you used and marked position."
       (cancel-timer binky-frequency-timer)
       (setq binky-frequency-timer nil))))
 
+
 ;;;###autoload
-(define-minor-mode binky-margin-mode
-  "Toggle displaying indicator on the margin."
+(define-minor-mode binky-margin-local-mode
+  "Toggle displaying indicators on the margin locally.
+You probably shouldn't use this function directly."
   :group 'binky
   :lighter ""
-  :global t
+  (let ((width-var (intern (format "%s-margin-width" binky-margin-side))))
+    (if binky-margin-local-mode
+        (progn
+          (setq-local binky-margin-width-orig width-var)
+          (setq width-var 1))
+      (setq width-var binky-margin-width-orig)
+      (setq binky-margin-width-orig nil)))
+  (dolist (win (get-buffer-window-list))
+    (set-window-buffer win (current-buffer)))
+  (binky--margin-local-update binky-margin-local-mode))
+
+;;;###autoload
+(define-global-minor-mode binky-margin-mode
+  binky-margin-local-mode
+  (lambda ()
+    (when (and (bound-and-true-p binky-mode)
+               (bound-and-true-p binky-margin-mode))
+      (binky-margin-local-mode 1)))
   (if binky-margin-mode
       (progn
         (add-hook 'binky-mode-hook #'binky-margin-update)
@@ -881,9 +883,7 @@ you used and marked position."
     (remove-hook 'binky-mode-hook #'binky-margin-update)
     (remove-hook 'binky-alist-update-hook #'binky-margin-update)
     (remove-hook 'binky-auto-alist-update-hook #'binky-margin-update)
-    (remove-hook 'binky-back-record-update-hook #'binky-margin-update))
-  (binky--margin-setup (not binky-margin-mode))
-  (binky-margin-update))
+    (remove-hook 'binky-back-record-update-hook #'binky-margin-update)))
 
 (provide 'binky-mode)
 ;;; binky-mode.el ends here
