@@ -190,11 +190,8 @@ If nil, disable the highlight feature."
 
 (defcustom binky-margin-string "\x2691"
   "Which string to show as margin indicator.
-If nil, mark character would be used instead."
-  ;; "\x2590" => "▐"
-  ;; "\x2665" => "♥"
-  ;; "\x2630" => "☰"
-  ;; "\x2691" => "⚑"
+If nil, mark character would be used instead.  Recommendation as follow:
+\\x2590 => ▐, \\x2665 => ♥, \\x2630 => ☰, \\x2691 => ⚑, \\x221a => √, \x229b => ⊛."
   :type '(choice string (const :tag "Use mark character" nil))
   :group 'binky)
 
@@ -541,7 +538,7 @@ Only when the line MARKER has larger disatance than any"
                                ((and (eq x 'name)
                                      (equal (file-name-nondirectory
                                              (buffer-name binky-current-buffer)) y))
-                                'binky-preview-column-name-same)
+                                'binky-preview-header)
                                (t nil))))
                (cons x (if (or shadow (facep column-face))
                            (propertize y 'face (or cond-face column-face)) y))))
@@ -751,7 +748,7 @@ window regardless.  Press \\[keyboard-quit] to quit."
     (unwind-protect
         (progn
 		  (while (memq (binky--mark-type
-					    (read-key (propertize prompt 'face 'minibuffer-prompt)))
+					    (read-key prompt))
                        '(help nil))
             (and (eq (binky--mark-type) 'help) (binky-preview)))
 		  (if (eq (binky--mark-type) 'quit)
@@ -770,19 +767,19 @@ window regardless.  Press \\[keyboard-quit] to quit."
 ;;;###autoload
 (defun binky-add (mark)
   "Add the record in current point with MARK."
-  (interactive (list (binky--mark-read "Mark add: ")))
+  (interactive (list (binky--mark-read "Add:")))
   (binky--mark-add mark))
 
 ;;;###autoload
 (defun binky-delete (mark)
   "Delete the record according to MARK."
-  (interactive (list (binky--mark-read "Mark delete: ")))
+  (interactive (list (binky--mark-read "Delete:")))
   (binky--mark-delete mark))
 
 ;;;###autoload
 (defun binky-jump (mark)
   "Jump to point according to record of MARK."
-  (interactive (list (binky--mark-read "Mark jump: ")))
+  (interactive (list (binky--mark-read "Jump:")))
   (binky--mark-jump mark))
 
 ;;;###autoload
@@ -796,7 +793,12 @@ If MARK is uppercase, and the lowercase exists, then call `binky-delete'.
 Interactively, KEEP-ALIVE is the prefix argument.  With no prefix argument,
 it works as same as single command.  With a prefix argument, preview the
 records with no delay and keep alive until \\[keyboard-quit] pressed."
-  (interactive (list (binky--mark-read "Mark: " current-prefix-arg)
+  (interactive (list (binky--mark-read
+                      (propertize "Binky:" 'face
+                                  (if current-prefix-arg
+                                      'binky-preview-header
+                                    'default))
+                      current-prefix-arg)
                      current-prefix-arg))
   (if (binky--mark-get mark)
 	  (binky--mark-jump mark)
