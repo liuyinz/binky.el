@@ -1,4 +1,22 @@
 # Changelog
+# [1.1.0](https://github.com/liuyinz/binky-mode/compare/v1.0.0...v1.1.0) (2022-12-22)
+
+
+### Bug Fixes
+
+* highlight existing position line when add duplicated record ([7efd1d0](https://github.com/liuyinz/binky-mode/commit/7efd1d0b74fbe3bd8e2158e8a317f7684a273af4))
+* propertize mark in binky--message ([d1c4824](https://github.com/liuyinz/binky-mode/commit/d1c4824bee793cabe1515e66187cc08463813b26))
+* update dependency to emacs v26.3 ([4a4a99d](https://github.com/liuyinz/binky-mode/commit/4a4a99dbc2ae6b37e88dcafa6b4a06ead7b47ab4))
+
+
+### Features
+
+* add command binky-view ([16b1532](https://github.com/liuyinz/binky-mode/commit/16b1532d025666d863322b22cdabf76530bc8b13))
+* adjust prompt color with binky-* commands ([ee6d482](https://github.com/liuyinz/binky-mode/commit/ee6d482e9a27ce1721ef3b716aa76de714b7c665))
+* support margin indicator for back, auto marks ([d355f2a](https://github.com/liuyinz/binky-mode/commit/d355f2ad289ff1ca5b0d5cb0a52da4a036045f47))
+
+
+
 # 1.0.0 (2022-12-16)
 
 
