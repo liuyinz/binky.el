@@ -567,14 +567,15 @@ Only when the line MARKER has larger disatance than any"
                    (propertize (symbol-name (car x)) 'face 'binky-preview-header)))
 		   (binky--preview-column))))
 
-(defun binky-preview-toggle (&optional redisplay)
-  "Preview records of marked positions in `binky-preview-buffer'.
-When there is no window currently showing the buffer or REDISPLAY is non-nil,
-popup the window on the side `binky-preview-side'."
-  (if-let* (((not redisplay))
-            (buf binky-preview-buffer)
-            (win (get-buffer-window buf)))
-      (progn
+(defun binky-preview (&optional action)
+  "Toggle preview window on the side `binky-preview-side'.
+If optional arg ACTION is `close', close preview, if it's `redisplay',
+redisplay the preview.  If it's nil, toggle the preview."
+  (if (or (eq action 'close)
+          (and (null action)
+               (get-buffer-window binky-preview-buffer)))
+      (let* ((buf binky-preview-buffer)
+             (win (get-buffer-window buf)))
         (and (window-live-p win) (delete-window win))
         (and (get-buffer buf) (kill-buffer buf)))
 	(with-current-buffer-window
@@ -728,20 +729,22 @@ If `help-char' (or a member of `help-event-list') is pressed, display preview
 window regardless.  Press \\[keyboard-quit] to quit."
   (setq binky-current-buffer (current-buffer))
   ;; (setq binky-current-type nil)
-  (and keep-alive (binky-preview-toggle 'redisplay))
-  (let ((timer (when (numberp binky-preview-delay)
-		         (run-with-timer binky-preview-delay nil #'binky-preview-toggle))))
+  (and keep-alive (binky-preview 'redisplay))
+  (let ((timer (when (and (numberp binky-preview-delay)
+                          (null keep-alive))
+		         (run-with-timer binky-preview-delay nil
+                                 (apply-partially #'binky-preview 'redisplay)))))
     (unwind-protect
         (progn
 		  (while (memq (binky--mark-type (read-key prompt) 'refresh) '(help nil))
-            (and (eq binky-current-type 'help) (binky-preview-toggle)))
+            (and (eq binky-current-type 'help) (binky-preview)))
 		  (if (eq binky-current-type 'quit)
               (keyboard-quit)
             (downcase (string-to-char (nreverse (single-key-description
                                                  last-input-event t))))))
 	  (and (timerp timer) (cancel-timer timer))
       (when (or (eq binky-current-type 'quit) (null keep-alive))
-        (binky-preview-toggle)))))
+        (binky-preview 'close)))))
 
 (defun binky--mark-add (mark)
   "Add (MARK . MARKER) into records."
@@ -868,7 +871,7 @@ records with no delay and keep alive until \\[keyboard-quit] pressed."
          (and (eq binky-current-type 'manual)
               (binky--mark-add mark)))))
   (when keep-alive
-    (binky-preview-toggle 'redisplay)
+    (binky-preview 'redisplay)
     (call-interactively #'binky-binky)))
 
 ;;;###autoload
