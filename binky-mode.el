@@ -209,6 +209,7 @@ If nil, mark character would be used instead.  Recommendation as follow:
 (defface binky-preview-column-mark-auto
   '((t :inherit font-lock-function-name-face
        :bold t
+       :italic nil
        :inverse-video nil))
   "Face used to highlight the auto mark of record in preview."
   :group 'binky)
@@ -216,6 +217,7 @@ If nil, mark character would be used instead.  Recommendation as follow:
 (defface binky-preview-column-mark-back
   '((t :inherit font-lock-type-face
        :bold t
+       :italic nil
        :inverse-video nil))
   "Face used to highlight the back mark of record in preview."
   :group 'binky)
@@ -223,6 +225,7 @@ If nil, mark character would be used instead.  Recommendation as follow:
 (defface binky-preview-column-mark-manual
   '((t :inherit font-lock-keyword-face
        :bold t
+       :italic nil
        :inverse-video nil))
   "Face used to highlight the mark of record in preview."
   :group 'binky)
