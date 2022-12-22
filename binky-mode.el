@@ -3,7 +3,7 @@
 ;; Copyright (C) 2022 liuyinz
 
 ;; Author: liuyinz <liuyinz95@gmail.com>
-;; Version: 1.0.0
+;; Version: 1.1.0
 ;; Package-Requires: ((emacs "26.3"))
 ;; Keywords: convenience
 ;; Homepage: https://github.com/liuyinz/binky-mode
@@ -325,9 +325,14 @@ MARK is a lowercase letter between a-z.  INFO is a marker or a list of form
 (defvar binky-current-buffer nil
   "Buffer where binky command called from.")
 
-(defvar binky-current-type nil)
-(defvar binky--mark-available nil)
-(defvar binky--mark-manual nil)
+(defvar binky-current-type nil
+  "Type of `last-input-event'.")
+
+(defvar binky--mark-available nil
+  "List of legal marks used in all records.")
+
+(defvar binky--mark-manual nil
+  "List of legal marks used in manual records.")
 
 
 
@@ -377,6 +382,17 @@ ARGS format is as same as `format' command."
   "Return value of `binky-frequency' of buffer which MARKER points to."
   (or (buffer-local-value 'binky-frequency (marker-buffer marker)) 0))
 
+(defun binky--marker-equal-p (x y &optional distance)
+  "Return non-nil if marker X and Y equal.
+When they are in same buffer and line distance is no more larger than
+DISTANCE."
+  (and (markerp x) (markerp y)
+       (eq (marker-buffer x) (marker-buffer y))
+       (with-current-buffer (marker-buffer x)
+         (<= (abs (- (line-number-at-pos x 'absolute)
+                     (line-number-at-pos y 'absolute)))
+             (or distance binky-record-distance 0)))))
+
 (defun binky--record-normalize (record)
   "Return RECORD in normalized style (mark name line mode context position)."
   (if-let* ((info (cdr record))
@@ -393,16 +409,16 @@ ARGS format is as same as `format' command."
               pos))
     record))
 
-(defun binky--record-prop-get (record prop)
-  "Return the property PROP of RECORD, or nil if none."
-  (let ((record (binky--record-normalize record)))
-    (cl-case prop
-      (mark (nth 0 record))
-      (name (nth 1 record))
-      (line (nth 2 record))
-      (mode (nth 3 record))
-      (context (nth 4 record))
-      (position (nth 5 record)))))
+;; (defun binky--record-prop-get (record prop)
+;;   "Return the property PROP of RECORD, or nil if none."
+;;   (let ((record (binky--record-normalize record)))
+;;     (cl-case prop
+;;       (mark (nth 0 record))
+;;       (name (nth 1 record))
+;;       (line (nth 2 record))
+;;       (mode (nth 3 record))
+;;       (context (nth 4 record))
+;;       (position (nth 5 record)))))
 
 (defun binky--record-aggregate (style)
   "Return aggregated records accroding to STYLE."
@@ -428,14 +444,13 @@ ARGS format is as same as `format' command."
                                 (eq (cdr x) (cdr binky-back-record))))
                           (append binky-alist binky-auto-alist)))))))
 
-(defun binky--record-duplicated-p (marker)
-  "Return non-nil if MARKER' line uncoverd in records.
-Only when the line MARKER has larger disatance than any"
+(defun binky--record-duplicated-p (marker &optional distance)
+  "Return non-nil if MARKER equals with any record of `binky-alist'.
+When the line MARKER at has no larger distance with DISTANCE, return that
+record."
   (cl-some (lambda (x)
              (and (markerp (cdr x))
-                  (<= (abs (- (binky--record-prop-get (cons nil marker) 'line)
-                              (binky--record-prop-get x 'line)))
-                      binky-record-distance)
+                  (binky--marker-equal-p marker (cdr x) distance)
                   x))
            binky-alist))
 
@@ -460,10 +475,7 @@ Only when the line MARKER has larger disatance than any"
           (unless (cl-some #'funcall filters)
             (push (point-marker) result))))
       ;; delete marker duplicated with `binky-alist'
-      (setq result (cl-remove-if (lambda (m)
-                                   (let ((binky-record-distance 0))
-                                     (binky--record-duplicated-p m)))
-                                 result))
+      (setq result (cl-remove-if (lambda (m) (binky--record-duplicated-p m 0)) result))
       (cl-case binky-record-sort-by
         (recency
          (setq result (reverse result)))
@@ -799,7 +811,8 @@ window regardless.  Press \\[keyboard-quit] to quit."
 		  (find-file (car info))
 		  (goto-char (car (last info))))
         (binky-highlight 'jump)
-        (when (characterp binky-mark-back)
+        (when (and (characterp binky-mark-back)
+                   (not (binky--marker-equal-p last (point-marker) 0)))
           (setq binky-back-record (cons binky-mark-back last))
           (run-hooks 'binky-back-record-update-hook)))
     (binky--message mark 'non-exist)))
