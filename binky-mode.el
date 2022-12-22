@@ -191,7 +191,7 @@ If nil, disable the highlight feature."
 (defcustom binky-margin-string "\x2691"
   "Which string to show as margin indicator.
 If nil, mark character would be used instead.  Recommendation as follow:
-\\x2590 => ▐, \\x2665 => ♥, \\x2630 => ☰, \\x2691 => ⚑, \\x221a => √, \x229b => ⊛."
+\\x2590 => ▐, \\x2665 => ♥, \\x2630 => ☰, \\x2691 => ⚑, \\x221a => √, \\x229b => ⊛."
   :type '(choice string (const :tag "Use mark character" nil))
   :group 'binky)
 
