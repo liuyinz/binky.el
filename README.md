@@ -23,6 +23,7 @@ same mechanism like `point-to-register` but with an enhanced experience.
   - [Feature](#feature)
   - [Comparison](#comparison)
   - [Todo](#todo)
+  - [FAQ](#faq)
   - [License](#license)
 
 <!-- markdown-toc end -->
@@ -113,9 +114,44 @@ Enjoy it.
 
 ## Todo
 
-- [x] Avoid duplicated records added
+- [x] Avoid adding duplicated records
 - [x] Margin indicator support
+- [ ] Fringe indicator support
 - [ ] More sorting strategy: frecency, duration
+
+## FAQ
+
+1. `binky-margin-mode` conflicts with other packages like [flycheck](https://github.com/flycheck/flycheck), [diff-hl](https://github.com/dgutov/diff-hl), [linum-mode](https://github.com/lassik/emacs-format-all-the-code), etc ?
+
+   `binky-margin-mode` supports only margin for now, so solutions :
+    - Use fringe in other packages
+    ```elisp
+    ;; flycheck
+    ;; Use left-fringe or right-fringe
+     (setq flycheck-indication-mode 'left-fringe)
+
+    ;; diff-hl
+    ;; use fringe by default, don't turn on diff-hl-margin-mode
+
+    ;; linum-mode
+    ;; don't support fringe, use display-line-numbers-mode
+    ```
+    - Use different margin in other packages
+    ```elisp
+    (setq binky-margin-side 'left)
+
+    ;; flycheck, different margin side
+    (setq flycheck-indication-mode 'right-margin)
+
+    ;; diff-hl, different margin side
+    (setq diff-hl-side 'right)
+    (diff-hl-margin-mode)
+    ```
+
+2. All records position change to 1 after run `format-all-buffer` command ?
+
+   [format-all](https://github.com/lassik/emacs-format-all-the-code) formats buffer by overwriting it's entire content, all markers position would be change to position 1. Please use other formatters like [apheleia](https://github.com/radian-software/apheleia) instead.
+
 
 ## License
 
