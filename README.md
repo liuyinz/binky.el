@@ -33,7 +33,7 @@ same mechanism like `point-to-register` but with an enhanced experience.
 
 ![binky with preview](image/binky-preview.png)
 
-`?` or `C-h` for popup preview mannually, `q`, `C-g` or `escape` for quit
+`?` for toggle preview mannually, `q` or `escape` for quit
 
 - Call `M-x binky-margin-mdoe`
 
@@ -76,7 +76,8 @@ Install with `M-x package-install` <kbd>RET</kbd> `binky-mode` from within Emacs
 
 - `binky-add` : add current positon to records
 - `binky-delete` : delete existed position from records
-- `binky-jump` : jump to position in records
+- `binky-jump` : jump to position of records
+- `binky-view` : view the position of records in other window
 - `binky-binky` : one command to rule all. With `C-u` prefix, keep editing untill quit
 - `binky-margin-mode` : toggle to enable or disable margin indicator feature
 - `binky-auto-toggle` : toggle to enable or disable auto-mark feature
