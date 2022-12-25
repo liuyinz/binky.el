@@ -79,13 +79,20 @@ Install with `M-x package-install` <kbd>RET</kbd> `binky-mode` from within Emacs
 - `binky-delete` : delete existed position from records
 - `binky-jump` : jump to position of records
 - `binky-view` : view the position of records in other window
-- `binky-binky` : one command to rule all. With `C-u` prefix, keep editing untill quit
 - `binky-margin-mode` : toggle to enable or disable margin indicator feature
 - `binky-auto-toggle` : toggle to enable or disable auto-mark feature
 
+- `binky-binky` : one command to rule all. 
+  e.g:
+  - press `j`, if record `j` doesn't exist, call `binky-add`, or call `binky-jump`.
+  - press `J`, call `binky-delete`.
+  - press `ctrl-j`, view the record `j` in ohter window, don't jump. 
+  
+  With `C-u` prefix, keep editing untill quit
+
 ## Customization
 
-A lot of options are provided. See docstrings in defcustoms.
+Lots of options are provided, see customization part in file.
 
 ## Feature
 
@@ -123,7 +130,7 @@ Enjoy it.
 
 1. `binky-margin-mode` conflicts with other packages like [flycheck](https://github.com/flycheck/flycheck), [diff-hl](https://github.com/dgutov/diff-hl), [linum-mode](https://github.com/lassik/emacs-format-all-the-code), etc ?
 
-   `binky-margin-mode` supports only margin for now, so solutions :
+   `binky-margin-mode` supports only margin for now, so solutions here :
     - Use fringe in other packages
     ```elisp
     ;; flycheck
@@ -134,9 +141,9 @@ Enjoy it.
     ;; use fringe by default, don't turn on diff-hl-margin-mode
 
     ;; linum-mode
-    ;; don't support fringe, use display-line-numbers-mode
+    ;; don't support fringe, use display-line-numbers-mode (since 26.0.50) instead
     ```
-    - Use different margin in other packages
+    - Use different side of margin in other packages
     ```elisp
     (setq binky-margin-side 'left)
 
