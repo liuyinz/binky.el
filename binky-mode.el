@@ -466,16 +466,14 @@ record."
     (run-hooks 'binky-back-record-update-hook))
   ;; update auto marked records
   (let* ((marks (remove binky-mark-back binky-mark-auto))
-         (len (length marks))
-         (result (list))
-         (filters (append binky-exclude-functions
-                          '(binky--exclude-mode-p
-                            binky--exclude-regexp-p))))
-    (when (> len 0)
-      ;; remove current-buffer
-      (cl-dolist (buf (nthcdr 1 (buffer-list)))
+         (result (list)))
+    (when (> (length marks) 0)
+      ;; remove current-buffer and last buffer(if current-buffer if minibuffer)
+      (cl-dolist (buf (nthcdr (if (minibufferp (current-buffer)) 2 1) (buffer-list)))
         (with-current-buffer buf
-          (unless (cl-some #'funcall filters)
+          (unless (cl-some #'funcall (append binky-exclude-functions
+                                             '(binky--exclude-mode-p
+                                               binky--exclude-regexp-p)))
             (push (point-marker) result))))
       ;; delete marker duplicated with `binky-alist'
       (setq result (cl-remove-if (lambda (m) (binky--record-duplicated-p m 0)) result))
