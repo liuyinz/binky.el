@@ -125,6 +125,7 @@ Enjoy it.
 - [x] Margin indicator support
 - [ ] Fringe indicator support
 - [ ] More sorting strategy: frecency, duration
+- [ ] Add command to store records cross sessions
 
 ## FAQ
 
