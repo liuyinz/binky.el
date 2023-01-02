@@ -81,13 +81,13 @@ Install with `M-x package-install` <kbd>RET</kbd> `binky-mode` from within Emacs
 - `binky-view` : view the position of records in other window
 - `binky-margin-mode` : toggle to enable or disable margin indicator feature
 - `binky-auto-toggle` : toggle to enable or disable auto-mark feature
-
-- `binky-binky` : one command to rule all. 
+- `binky-binky` : one command to rule all.
   e.g:
-  - press `j`, if record `j` doesn't exist, call `binky-add`, or call `binky-jump`.
+
+  - press `j`, if record `j` exists, call `binky-jump`, otherwise call `binky-add`.
   - press `J`, call `binky-delete`.
-  - press `ctrl-j`, view the record `j` in ohter window, don't jump. 
-  
+  - press `ctrl-j`, view the record `j` in other window without jumping.
+
   With `C-u` prefix, keep editing untill quit
 
 ## Customization
@@ -131,34 +131,37 @@ Enjoy it.
 1. `binky-margin-mode` conflicts with other packages like [flycheck](https://github.com/flycheck/flycheck), [diff-hl](https://github.com/dgutov/diff-hl), [linum-mode](https://github.com/lassik/emacs-format-all-the-code), etc ?
 
    `binky-margin-mode` supports only margin for now, so solutions here :
-    - Use fringe in other packages
-    ```elisp
-    ;; flycheck
-    ;; Use left-fringe or right-fringe
-     (setq flycheck-indication-mode 'left-fringe)
 
-    ;; diff-hl
-    ;; use fringe by default, don't turn on diff-hl-margin-mode
+   - Use fringe in other packages
 
-    ;; linum-mode
-    ;; don't support fringe, use display-line-numbers-mode (since 26.0.50) instead
-    ```
-    - Use different side of margin in other packages
-    ```elisp
-    (setq binky-margin-side 'left)
+   ```elisp
+   ;; flycheck
+   ;; Use left-fringe or right-fringe
+    (setq flycheck-indication-mode 'left-fringe)
 
-    ;; flycheck, different margin side
-    (setq flycheck-indication-mode 'right-margin)
+   ;; diff-hl
+   ;; use fringe by default, don't turn on diff-hl-margin-mode
 
-    ;; diff-hl, different margin side
-    (setq diff-hl-side 'right)
-    (diff-hl-margin-mode)
-    ```
+   ;; linum-mode
+   ;; don't support fringe, use display-line-numbers-mode (since 26.0.50) instead
+   ```
+
+   - Use different side of margin in other packages
+
+   ```elisp
+   (setq binky-margin-side 'left)
+
+   ;; flycheck, different margin side
+   (setq flycheck-indication-mode 'right-margin)
+
+   ;; diff-hl, different margin side
+   (setq diff-hl-side 'right)
+   (diff-hl-margin-mode)
+   ```
 
 2. All records position change to 1 after run `format-all-buffer` command ?
 
    [format-all](https://github.com/lassik/emacs-format-all-the-code) formats buffer by overwriting it's entire content, all markers position would be change to position 1. Please use other formatters like [apheleia](https://github.com/radian-software/apheleia) instead.
-
 
 ## License
 
