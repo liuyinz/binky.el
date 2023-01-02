@@ -129,7 +129,7 @@ Enjoy it.
 
 ## FAQ
 
-1. `binky-margin-mode` conflicts with other packages like [flycheck](https://github.com/flycheck/flycheck), [diff-hl](https://github.com/dgutov/diff-hl), [linum-mode](https://github.com/lassik/emacs-format-all-the-code), etc ?
+1. `binky-margin-mode` conflicts with other packages like [flycheck](https://github.com/flycheck/flycheck), [diff-hl](https://github.com/dgutov/diff-hl), linum-mode(built-in), etc ?
 
    `binky-margin-mode` supports only margin for now, so solutions here :
 
