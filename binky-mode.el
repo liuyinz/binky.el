@@ -594,13 +594,9 @@ redisplay the preview.  If it's nil, toggle the preview."
 	(with-current-buffer-window
 		binky-preview-buffer
 		(cons 'display-buffer-in-side-window
-			  `((dedicated     . t)
-				(side          . ,binky-preview-side)
-				(preserve-size . (,(binky--preview-horizontal-p) . t))
-                (,(if (binky--preview-horizontal-p)
-                      'window-width
-                    'window-height)
-                 . fit-window-to-buffer)))
+			  `((side          . ,binky-preview-side)
+                (window-height . fit-window-to-buffer)
+                (window-width  . fit-window-to-buffer)))
         nil
       (progn
         (setq cursor-in-non-selected-windows nil
