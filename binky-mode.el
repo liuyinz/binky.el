@@ -746,7 +746,10 @@ window regardless.  Press \\[keyboard-quit] to quit."
     (unwind-protect
         (progn
 		  (while (memq (binky--mark-type (read-key prompt) 'refresh) '(help nil))
-            (and (eq binky-current-type 'help) (binky-preview)))
+            (if (eq binky-current-type 'help)
+                (binky-preview)
+              (binky--message last-input-event 'illegal)
+              (sit-for 0.3 'nodisp)))
 		  (if (eq binky-current-type 'quit)
               (keyboard-quit)
             (downcase (string-to-char (nreverse (single-key-description
@@ -878,8 +881,9 @@ records with no delay and keep alive until \\[keyboard-quit] pressed."
     (ctrl (binky--mark-view mark))
     (t (if (binky--mark-get mark)
 	       (binky--mark-jump mark)
-         (and (eq binky-current-type 'manual)
-              (binky--mark-add mark)))))
+         (if (eq binky-current-type 'manual)
+             (binky--mark-add mark)
+           (binky--message mark 'illegal)))))
   (when keep-alive
     (binky-preview 'redisplay)
     (call-interactively #'binky-binky)))
