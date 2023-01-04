@@ -126,6 +126,8 @@ Enjoy it.
 - [ ] Fringe indicator support
 - [ ] More sorting strategy: frecency, duration
 - [ ] Add command to store records cross sessions
+- [ ] Add command to cycle sorting startegy in preview
+- [ ] Add option to show same buffer records first in preview
 
 ## FAQ
 
