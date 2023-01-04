@@ -241,12 +241,12 @@ If nil, mark character would be used instead.  Recommendation as follow:
   :group 'binky)
 
 (defface binky-preview-column-line
-  '((t :inherit font-lock-variable-name-face))
+  '((t :inherit font-lock-keyword-face))
   "Face used to highlight the line number of record in preview."
   :group 'binky)
 
 (defface binky-preview-column-mode
-  '((t :inherit font-lock-type-face))
+  '((t :inherit font-lock-function-name-face))
   "Face used to highlight the major mode of record in preview."
   :group 'binky)
 
@@ -562,7 +562,7 @@ record."
                                ((and (eq x 'name)
                                      (equal (file-name-nondirectory
                                              (buffer-name binky-current-buffer)) y))
-                                'binky-preview-header)
+                                'binky-preview-column-name-same)
                                (t nil))))
                (cons x (if (or shadow (facep column-face))
                            (propertize y 'face (or cond-face column-face)) y))))
