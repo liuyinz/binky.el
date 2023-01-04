@@ -602,7 +602,8 @@ redisplay the preview.  If it's nil, toggle the preview."
         (setq cursor-in-non-selected-windows nil
 		      mode-line-format nil
 		      truncate-lines t)
-        (setq-local fit-window-to-buffer-horizontally t)
+        (setq-local fit-window-to-buffer-horizontally t
+                    window-min-height 1)
         (let* ((total (mapcar #'binky--preview-propertize
                               (binky--record-aggregate 'preview)))
 		       (back (and binky-back-record
