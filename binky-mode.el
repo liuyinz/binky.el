@@ -33,7 +33,6 @@
 ;;; Code:
 
 (require 'cl-lib)
-(require 'cl-extra)
 (require 'subr-x)
 
 ;;; Customize
