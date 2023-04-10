@@ -36,7 +36,7 @@ same mechanism like `point-to-register` but with an enhanced experience.
 
 `?` for toggle preview mannually, `q` or `escape` for quit
 
-- Call `M-x binky-margin-mdoe`
+- Call `M-x binky-margin-mode`
 
 ![margin with sign](image/margin-with-sign.png)
 
