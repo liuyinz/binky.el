@@ -532,19 +532,14 @@ record."
           (if (binky--preview-horizontal-p) "" "  ")
 		  (mapconcat
 		   (lambda (x)
-			 (let* ((item (car x))
-					(limit (cdr x))
-					(str (alist-get item alist))
-					(len (length str)))
+			 (let* ((limit (cdr x))
+					(str (alist-get (car x) alist))
+                    (end (max limit (string-width (symbol-name (car x))))))
 			   (if (zerop limit)
-				   (substring str 0 nil)
-				 (setf limit (max limit (length (symbol-name item))))
-				 (and (> len limit)
-                      (setf (substring str (- limit (length binky-preview-ellipsis))
-                                       limit)
-							binky-preview-ellipsis))
-				 (setf (substring str len nil) (make-string limit 32))
-				 (substring str 0 limit))))
+                   str
+                 ;; FIXME align error if buffer name contain puncuation character "—"
+                 ;; use such as `string-pixel-width'
+                 (truncate-string-to-width str end nil ?\s binky-preview-ellipsis))))
 		   (binky--preview-column) "  ")))
 
 (defun binky--preview-propertize (record)
