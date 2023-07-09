@@ -138,11 +138,11 @@ If nil, disable preview, unless \\[help] is pressed."
   :group 'binky)
 
 (defcustom binky-preview-column
-  '((mark    10   4)
-    (name    28  15)
-    (line    10  6)
-    (mode    22  nil)
-    (context 0   nil))
+  '((mark    0.04  4)
+    (name    0.16  15)
+    (line    0.05  6)
+    (mode    0.12  nil)
+    (context 0     nil))
   "List of elements (COLUMN VERTICAL HORIZONTAL) to display preview.
 COLUMN is one of five parameters of record, listed in `binky-alist'
 and `binky-auto-alist'.
@@ -158,6 +158,8 @@ VERTICAL and HORIZONTAL are width of the COLUMN depended on
 HORIZONTAL used for `left' and `right'.
 If it's is nil, then COLUMN would not be displayed.
 If it's 0, the COLUMN would not be truncated.
+If it's float number between 0 and 1 rather than interger, then width is
+relative based on current frame width.
 Usually, `context' column should be at the end and not truncated."
   :type '(alist
           :key-type symbol
@@ -522,8 +524,14 @@ record."
   "Return alist of elements (COLUMN . WIDTH) to display preview."
   (cl-remove-if (lambda (x) (null (cdr x)))
                 (mapcar (lambda (f)
-  					      (cons (nth 0 f)
-  						        (nth (if (binky--preview-horizontal-p) 2 1) f)))
+                          (let ((width (if (binky--preview-horizontal-p)
+                                           (nth 2 f)
+                                         (nth 1 f))))
+  					        (cons (nth 0 f)
+                                  (ignore-errors
+                                    (if (< 0 width 1)
+                                        (ceiling (* width (frame-width)))
+                                      width)))))
   				        binky-preview-column)))
 
 (defun binky--preview-extract (alist)
