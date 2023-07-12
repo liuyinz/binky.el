@@ -80,7 +80,7 @@ Install with `M-x package-install` <kbd>RET</kbd> `binky-mode` from within Emacs
 - `binky-jump` : jump to position of records
 - `binky-view` : view the position of records in other window
 - `binky-margin-mode` : toggle to enable or disable margin indicator feature
-- `binky-auto-toggle` : toggle to enable or disable auto-mark feature
+- `binky-recent-toggle` : toggle to enable or disable recent jump feature
 - `binky-binky` : one command to rule all.
   e.g:
 
@@ -123,11 +123,11 @@ Enjoy it.
 
 - [x] Avoid adding duplicated records
 - [x] Margin indicator support
-- [ ] Fringe indicator support
 - [ ] More sorting strategy: frecency, duration
 - [ ] Add command to store records cross sessions
 - [ ] Add command to cycle sorting startegy in preview
 - [ ] Add option to show same buffer records first in preview
+- [ ] Fringe indicator support
 
 ## FAQ
 
