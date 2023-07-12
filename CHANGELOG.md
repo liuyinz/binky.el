@@ -1,4 +1,26 @@
 # Changelog
+# [1.2.0](https://github.com/liuyinz/binky-mode/compare/v1.1.0...v1.2.0) (2023-07-12)
+
+
+### Bug Fixes
+
+* adjust face color for preview ([df54d32](https://github.com/liuyinz/binky-mode/commit/df54d3231c950cc074fb7dab54b129d03434d7e7))
+* **binky-margin-mode:** make margin indicator no italic style ([61b2833](https://github.com/liuyinz/binky-mode/commit/61b2833d62c67aadb60d7eaeffc92291ab5ba3d3))
+* **binky-mark-back:** don't record position on the same line ([d054c4c](https://github.com/liuyinz/binky-mode/commit/d054c4ca27de70988836c6816d4788894a890210))
+* don't auto mark last buffer if current-buffer is minibuffer ([6aea48d](https://github.com/liuyinz/binky-mode/commit/6aea48d587b2c378c8ba3f0483b9b93120816c82))
+* echo warning if mark is illegal ([ec94dae](https://github.com/liuyinz/binky-mode/commit/ec94dae9779825487c3bb2c145dc43a2369b01d2))
+* error on couldn't truncate some langauga character like chinese ([3ac9925](https://github.com/liuyinz/binky-mode/commit/3ac99256cfaa8fb335ea86d1615eb21a9d09473a))
+* **preview:** close preview by force when quit the command ([1e0f9ab](https://github.com/liuyinz/binky-mode/commit/1e0f9abae41fa1773ee2b1f1275ea687e4f0a045))
+* set window-min-height to 1 in preview ([b30a05f](https://github.com/liuyinz/binky-mode/commit/b30a05f67a3c725f4257378de081b5d6fafde999))
+* typos in docstring ([b430ad8](https://github.com/liuyinz/binky-mode/commit/b430ad8b6bcc03830cd910d0540e149f68780cf8))
+
+
+### Features
+
+* add support for relative width of preview column ([5a7eac5](https://github.com/liuyinz/binky-mode/commit/5a7eac5e7dbfe003217e563be11eb62d5c7a354a))
+
+
+
 # [1.1.0](https://github.com/liuyinz/binky-mode/compare/v1.0.0...v1.1.0) (2022-12-22)
 
 
