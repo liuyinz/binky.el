@@ -481,10 +481,12 @@ record."
                           (append binky-manual-alist binky-recent-alist))))
      (preview
       ;; order, uniq
-      (mapcan (lambda (x) (alist-get x (list (cons 'back (list binky-back-record))
-                                             (cons 'recent binky-recent-alist)
-                                             (cons 'manual binky-manual-alist))))
-              binky-preview-order)))))
+      (cl-reduce #'append
+                 (mapcar
+                  (lambda (x) (alist-get x `((back   . ,(list binky-back-record))
+                                             (recent . ,binky-recent-alist)
+                                             (manual . ,binky-manual-alist))))
+                  binky-preview-order))))))
 
 (defun binky--recent-update ()
   "Update `binky-recent-alist' and `binky-back-record' automatically."
