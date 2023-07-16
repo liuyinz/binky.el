@@ -233,12 +233,12 @@ If nil, mark character would be used instead.  Recommendation as follow:
   :group 'binky)
 
 (defface binky-preview-header
-  '((t :inherit font-lock-constant-face :underline t))
+  '((t :inherit font-lock-type-face :underline t))
   "Face used to highlight the header in preview buffer."
   :group 'binky)
 
 (defface binky-preview-mark-recent
-  '((t :inherit font-lock-function-name-face
+  '((t :inherit font-lock-constant-face
        :bold t
        :italic nil
        :inverse-video nil))
