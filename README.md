@@ -34,7 +34,7 @@ same mechanism like `point-to-register` but with an enhanced experience.
 
 ![binky with preview](image/binky-preview.png)
 
-`?` for toggle preview mannually, `q` or `escape` for quit
+`?` for toggle preview manually, `q` or `escape` for quit
 
 - Call `M-x binky-margin-mode`
 
@@ -48,7 +48,7 @@ same mechanism like `point-to-register` but with an enhanced experience.
 
 ### dependencies
 
-- emacs, version >= 26.3
+- Emacs, version >= 26.3
 - cl-lib
 
 ### package
@@ -75,7 +75,7 @@ Install with `M-x package-install` <kbd>RET</kbd> `binky-mode` from within Emacs
   :hook (after-init-hook . (lambda () (binky-mode) (binky-margin-mode))))
 ```
 
-- `binky-add` : add current positon to records
+- `binky-add` : add current position to records
 - `binky-delete` : delete existed position from records
 - `binky-jump` : jump to position of records
 - `binky-view` : view the position of records in other window
@@ -88,7 +88,7 @@ Install with `M-x package-install` <kbd>RET</kbd> `binky-mode` from within Emacs
   - press `J`, call `binky-delete`.
   - press `ctrl-j`, view the record `j` in other window without jumping.
 
-  With `C-u` prefix, keep editing untill quit
+  With `C-u` prefix, keep editing until quit
 
 ## Customization
 
@@ -105,7 +105,7 @@ Lots of options are provided, see customization part in file.
 - [Dogears](https://github.com/alphapapa/dogears.el)
 
   - Bookmark style record
-  - More infomations: relevance, within, directory, etc
+  - More information: relevance, within, directory, etc
 
 - [Binky-mode](https://github.com/liuyinz/binky-mode)
 
@@ -125,7 +125,7 @@ Enjoy it.
 - [x] Margin indicator support
 - [ ] More sorting strategy: frecency, duration
 - [ ] Add command to store records cross sessions
-- [ ] Add command to cycle sorting startegy in preview
+- [ ] Add command to cycle sorting strategy in preview
 - [ ] Add option to show same buffer records first in preview
 - [ ] Fringe indicator support
 
