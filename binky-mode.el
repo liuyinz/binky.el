@@ -469,9 +469,7 @@ record."
    (cl-case style
      (sum
       ;; orderless, non-uniq
-      (cons binky-back-record
-            (append binky-manual-alist
-                    (and binky-mark-recent binky-recent-alist))))
+      (cons binky-back-record (append binky-manual-alist binky-recent-alist)))
      (margin
       ;; orderless, uniq
       (cons binky-back-record
@@ -488,7 +486,7 @@ record."
                                              (manual . ,binky-manual-alist))))
                   binky-preview-order))))))
 
-(defun binky--recent-update ()
+(defun binky--auto-update ()
   "Update `binky-recent-alist' and `binky-back-record' automatically."
   ;; delete back-record if buffer not exists
   (when (and binky-back-record
@@ -498,7 +496,8 @@ record."
   ;; update recent marked records
   (let* ((marks (remove binky-mark-back binky-mark-recent))
          (result (list)))
-    (when (> (length marks) 0)
+    (if (null marks)
+        (setq binky-recent-alist nil)
       ;; remove current-buffer and last buffer(if current-buffer if minibuffer)
       (cl-dolist (buf (nthcdr (if (minibufferp (current-buffer)) 2 1) (buffer-list)))
         (with-current-buffer buf
@@ -517,8 +516,8 @@ record."
         ;; (frecency ())
         ;; (duration ())
         (t nil))
-      (setq binky-recent-alist (cl-mapcar (lambda (x y) (cons x y)) marks result))
-      (run-hooks 'binky-recent-alist-update-hook))))
+      (setq binky-recent-alist (cl-mapcar (lambda (x y) (cons x y)) marks result)))
+    (run-hooks 'binky-recent-alist-update-hook)))
 
 (defun binky--swap-out ()
   "Turn record from marker into list of properties when a buffer is killed."
@@ -924,13 +923,8 @@ records with no delay and keep alive until \\[keyboard-quit] pressed."
 (defun binky-recent-toggle ()
   "Toggle whether enable recent mark feature or not."
   (interactive)
-  (if binky-mark-recent
-      (setq binky-recent-toggle (cons binky-mark-recent binky-recent-alist)
-            binky-mark-recent nil
-            binky-recent-alist nil)
-    (setq binky-mark-recent (car binky-recent-toggle)
-          binky-recent-alist (cdr binky-recent-toggle)
-          binky-recent-toggle nil)))
+  (cl-rotatef binky-recent-toggle binky-mark-recent)
+  (binky--auto-update))
 
 ;;;###autoload
 (define-minor-mode binky-mode
@@ -940,7 +934,7 @@ you used and marked position."
   :group 'binky
   :global t
   (let ((cmd (if binky-mode #'add-hook #'remove-hook)))
-    (dolist (pair '((buffer-list-update-hook . binky--recent-update)
+    (dolist (pair '((buffer-list-update-hook . binky--auto-update)
                     (kill-buffer-hook . binky--swap-out)
                     (find-file-hook . binky--swap-in)))
       (funcall cmd (car pair) (cdr pair))))
