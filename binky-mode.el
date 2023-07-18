@@ -321,8 +321,6 @@ MARK is a lowercase letter between a-z.  INFO is a marker or a list of form
 (defvar binky-recent-alist nil
   "List of records (MARK . MARKER), set and updated by recent buffers.")
 
-(defvar binky-recent-toggle nil)
-
 (defvar binky-back-record nil
   "Record of last position before `binky-jump', set and updated automatically.")
 
@@ -923,7 +921,12 @@ records with no delay and keep alive until \\[keyboard-quit] pressed."
 (defun binky-recent-toggle ()
   "Toggle whether enable recent mark feature or not."
   (interactive)
-  (cl-rotatef binky-recent-toggle binky-mark-recent)
+  (if-let ((state (get 'binky-recent-toggle 'state)))
+      (progn
+        (setq binky-mark-recent state)
+        (put 'binky-recent-toggle 'state nil))
+    (put 'binky-recent-toggle 'state binky-mark-recent)
+    (setq binky-mark-recent nil))
   (binky--auto-update))
 
 ;;;###autoload
