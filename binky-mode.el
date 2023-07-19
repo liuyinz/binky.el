@@ -90,11 +90,7 @@ marks.  Letters, digits, punctuation, etc.  If nil, disable the feature."
 (defcustom binky-recent-sort-by 'recency
   "Sorting strategy for recent marked records."
   :type '(choice (const :tag "Sort by recency" recency)
-                 (Const :tag "Sort by frequency" frequency)
-                 ;; TODO
-                 ;; (const :tag "Sort by frecency" frecency)
-                 ;; (const :tag "Sort by duration" duration)
-                 )
+                 (Const :tag "Sort by frequency" frequency))
   :package-version '(binky-mode . "1.2.0")
   :group 'binky)
 
@@ -492,8 +488,8 @@ record."
     (setq binky-back-record nil)
     (run-hooks 'binky-back-record-update-hook))
   ;; update recent marked records
-  (let* ((marks (remove binky-mark-back binky-mark-recent))
-         (result (list)))
+  (let ((marks (remove binky-mark-back binky-mark-recent))
+        (result (list)))
     (if (null marks)
         (setq binky-recent-alist nil)
       ;; remove current-buffer and last buffer(if current-buffer if minibuffer)
@@ -505,16 +501,12 @@ record."
             (push (point-marker) result))))
       ;; delete marker duplicated with `binky-manual-alist'
       (setq result (cl-remove-if (lambda (m) (binky--duplicated-p m 0)) result))
-      (cl-case binky-recent-sort-by
-        (recency
-         (setq result (reverse result)))
-        (frequency
-         (setq result (cl-sort result #'> :key #'binky--frequency-get)))
-        ;; TODO
-        ;; (frecency ())
-        ;; (duration ())
-        (t nil))
-      (setq binky-recent-alist (cl-mapcar (lambda (x y) (cons x y)) marks result)))
+      (setq binky-recent-alist
+            (cl-mapcar (lambda (x y) (cons x y))
+                       marks
+                       (if (equal binky-recent-sort-by 'recency)
+                           (reverse result)
+                         (cl-sort result #'> :key #'binky--frequency-get)))))
     (run-hooks 'binky-recent-alist-update-hook)))
 
 (defun binky--swap-out ()

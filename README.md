@@ -123,7 +123,7 @@ Enjoy it.
 
 - [x] Avoid adding duplicated records
 - [x] Margin indicator support
-- [ ] More sorting strategy: frecency, duration
+- [x] ~~More sorting strategy: frecency, duration~~
 - [ ] Add command to store records cross sessions
 - [ ] Add command to cycle sorting strategy in preview
 - [ ] Add option to show same buffer records first in preview
