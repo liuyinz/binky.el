@@ -94,15 +94,6 @@ marks.  Letters, digits, punctuation, etc.  If nil, disable the feature."
   :package-version '(binky-mode . "1.2.0")
   :group 'binky)
 
-;; ;; TODO
-;; (defcustom binky-manual-sort-by 'order
-;;   "Sorting strategy for manual marked records."
-;;   :type '(choice (const :tag "Sort by name" name)
-;;                  (const :tag "Sort by mode" mode)
-;;                  (const :tag "Sort by order" order))
-;;   :package-version '(binky-mode . "1.2.0")
-;;   :group 'binky)
-
 (defcustom binky-distance 5
   "Maximum distance in lines count between positions to be considered equal."
   :type 'integer
@@ -202,6 +193,12 @@ Usually, `context' column should be at the end and not truncated."
                          (const manual)
                          (const recent)))
   :package-version '(binky-mode . "1.2.0")
+  :group 'binky)
+
+(defcustom binky-preview-in-groups nil
+  "If non-nil, preview manual records in group by buffer."
+  :type 'boolean
+  :package-version '(binky-mode . "1.2.1")
   :group 'binky)
 
 (defcustom binky-preview-show-header t
@@ -456,6 +453,23 @@ record."
 ;;       (context (nth 4 record))
 ;;       (position (nth 5 record)))))
 
+(defun binky--manual-preview ()
+  "Return manual alist for preview."
+  (if binky-preview-in-groups
+      (let (result same)
+        (cl-dolist (name (cl-remove-duplicates
+                          (mapcar (lambda (x) (nth 1 (binky--normalize x)))
+                                  binky-manual-alist)))
+          (let (group)
+            (cl-dolist (record binky-manual-alist)
+              (when (equal name (nth 1 (binky--normalize record)))
+                (if (equal name (buffer-file-name binky-current-buffer))
+                    (push record same)
+                  (push record group))))
+            (setq result (append result (reverse group)))))
+        (setq result (append (reverse same) result)))
+    (reverse binky-manual-alist)))
+
 (defun binky--aggregate (style)
   "Return aggregated records according to STYLE."
   (cl-remove
@@ -477,7 +491,7 @@ record."
                  (mapcar
                   (lambda (x) (alist-get x `((back   . ,(list binky-back-record))
                                              (recent . ,binky-recent-alist)
-                                             (manual . ,binky-manual-alist))))
+                                             (manual . ,(binky--manual-preview)))))
                   binky-preview-order))))))
 
 (defun binky--auto-update ()
@@ -718,6 +732,7 @@ face `binky-preview-killed' is used instead."
 
 (defun binky--mark-type (mark &optional refresh)
   "Return type of MARK and update `binky-current-type' if REFRESH is non-nil.
+The `group' means to toggle whether records in groups and preview.
 The `quit' means to quit the command and preview.
 The `help' means to preview records if not exist.
 The `back' means to jump back last position.
@@ -725,6 +740,7 @@ The `recent' means to jump to recent marked buffers.
 The `manual' means to operate on records manually.
 The `delete' means to delete existing mark by uppercase."
   (let ((type (cond
+               ((equal mark ?\ ) 'group)
                ((memq mark (cons binky-mark-quit '(?\C-\[ escape))) 'quit)
                ((memq mark help-event-list) 'help)
                ((equal mark binky-mark-back) 'back)
@@ -733,7 +749,7 @@ The `delete' means to delete existing mark by uppercase."
                ((memq (downcase mark) (binky--mark-manual)) 'shift)
                ((equal (binky--mark-prefix mark) "C") 'ctrl)
                ((equal (binky--mark-prefix mark) "M") 'alt)
-               (t nil))))
+               (t 'illegal))))
     (and refresh (setq binky-current-type type))
     type))
 
@@ -766,11 +782,16 @@ window regardless.  Press \\[keyboard-quit] to quit."
                                  (apply-partially #'binky--preview 'redisplay)))))
     (unwind-protect
         (progn
-		  (while (memq (binky--mark-type (read-key prompt) 'refresh) '(help nil))
-            (if (eq binky-current-type 'help)
-                (binky--preview)
-              (binky--message last-input-event 'illegal)
-              (sit-for 0.3 'nodisp)))
+		  (while (memq (binky--mark-type (read-key prompt) 'refresh)
+                       '(help group illegal))
+            (cl-case binky-current-type
+              (help (binky--preview))
+              (group (progn
+                       (setq binky-preview-in-groups (not binky-preview-in-groups))
+                       (binky--preview 'redisplay)))
+              (illegal (progn
+                         (binky--message last-input-event 'illegal)
+                         (sit-for 0.3 'nodisp)))))
 		  (if (eq binky-current-type 'quit)
               (keyboard-quit)
             (downcase (string-to-char (nreverse (single-key-description
