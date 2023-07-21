@@ -427,13 +427,14 @@ record."
            binky-manual-alist))
 
 (defun binky--normalize (record)
-  "Return RECORD in normalized style (mark name line mode context position)."
+  "Return RECORD in normalized style (mark name file line mode context position)."
   (if-let* ((info (cdr record))
             ((markerp info))
             (pos (marker-position info)))
       (with-current-buffer (marker-buffer info)
         (list (car record)
-              (or buffer-file-name (buffer-name) "")
+              (or (buffer-name) "")
+              (buffer-file-name)
               (line-number-at-pos pos 'absolute)
               major-mode
               (save-excursion
@@ -448,10 +449,11 @@ record."
 ;;     (cl-case prop
 ;;       (mark (nth 0 record))
 ;;       (name (nth 1 record))
-;;       (line (nth 2 record))
-;;       (mode (nth 3 record))
-;;       (context (nth 4 record))
-;;       (position (nth 5 record)))))
+;;       (file (nth 1 record))
+;;       (line (nth 3 record))
+;;       (mode (nth 4 record))
+;;       (context (nth 5 record))
+;;       (position (nth 6 record)))))
 
 (defun binky--manual-preview ()
   "Return manual alist for preview."
@@ -463,7 +465,7 @@ record."
           (let (group)
             (cl-dolist (record binky-manual-alist)
               (when (equal name (nth 1 (binky--normalize record)))
-                (if (equal name (buffer-file-name binky-current-buffer))
+                (if (equal name (buffer-name binky-current-buffer))
                     (push record same)
                   (push record group))))
             (setq result (append result (reverse group)))))
@@ -530,7 +532,7 @@ record."
       (when-let* ((info (cdr record))
                   ((markerp info))
                   ((eq (marker-buffer info) (current-buffer))))
-        (if (and buffer-file-name
+        (if (and (buffer-file-name)
                  (null binky-prune))
 	        (setcdr record (cdr (binky--normalize record)))
           (delete record binky-manual-alist))))
@@ -543,7 +545,7 @@ record."
     (dolist (record binky-manual-alist)
       (when-let* ((info (cdr record))
                   ((not (markerp info)))
-                  ((equal (car info) buffer-file-name)))
+                  ((equal (cadr info) buffer-file-name)))
         (setcdr record (set-marker (make-marker) (car (last info))))))
     (unless (equal orig binky-manual-alist)
       (run-hooks 'binky-manual-alist-update-hook))))
@@ -594,17 +596,16 @@ record."
                    (cond-face (cond
                                (killed 'binky-preview-killed)
                                ((and (eq x 'name)
-                                     (equal (file-name-nondirectory
-                                             (buffer-name binky-current-buffer)) y))
+                                     (equal y (buffer-name binky-current-buffer)))
                                 'binky-preview-name-same)
                                (t nil))))
                (cons x (if (or killed (facep column-face))
                            (propertize y 'face (or cond-face column-face)) y))))
            '(name line mode context)
-           (list (file-name-nondirectory (nth 1 record))
-		         (number-to-string (nth 2 record))
-		         (string-remove-suffix "-mode" (symbol-name (nth 3 record)))
-		         (string-trim (nth 4 record)))))))
+           (list (nth 1 record)
+		         (number-to-string (nth 3 record))
+		         (string-remove-suffix "-mode" (symbol-name (nth 4 record)))
+		         (string-trim (nth 5 record)))))))
 
 (defun binky--preview-header ()
   "Return formatted string of header for preview."
@@ -850,7 +851,7 @@ window regardless.  Press \\[keyboard-quit] to quit."
             (progn
 			  (switch-to-buffer (marker-buffer info))
 			  (goto-char info))
-		  (find-file (car info))
+		  (find-file (cadr info))
 		  (goto-char (car (last info))))
         (binky--highlight 'jump)
         (when (and (characterp binky-mark-back)
@@ -863,7 +864,7 @@ window regardless.  Press \\[keyboard-quit] to quit."
   "View the point in other window according to MARK."
   (if-let ((info (binky--mark-get mark)))
       (progn
-        (unless (markerp info) (find-file-noselect (car info)))
+        (unless (markerp info) (find-file-noselect (cadr info)))
         (let* ((info (binky--mark-get mark))
                (buf (marker-buffer info))
                (pop-up-windows t))
