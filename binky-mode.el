@@ -458,7 +458,7 @@ record."
 (defun binky--manual-preview ()
   "Return manual alist for preview."
   (if binky-preview-in-groups
-      (let (result same)
+      (let (live same killed)
         (cl-dolist (name (cl-remove-duplicates
                           (mapcar (lambda (x) (nth 1 (binky--normalize x)))
                                   binky-manual-alist)))
@@ -468,8 +468,10 @@ record."
                 (if (equal name (buffer-name binky-current-buffer))
                     (push record same)
                   (push record group))))
-            (setq result (append result (reverse group)))))
-        (setq result (append (reverse same) result)))
+            (if (get-buffer name)
+              (setq live (append live group))
+                (setq killed (append killed group)))))
+        (append same live killed))
     (reverse binky-manual-alist)))
 
 (defun binky--aggregate (style)
