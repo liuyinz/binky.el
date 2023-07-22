@@ -1,4 +1,22 @@
 # Changelog
+## [1.2.1](https://github.com/liuyinz/binky-mode/compare/v1.2.0...v1.2.1) (2023-07-22)
+
+
+### Bug Fixes
+
+* add recent record unexpectedly into manual alist ([80c4ee4](https://github.com/liuyinz/binky-mode/commit/80c4ee4accc1c814a65381da13de5e62cbeba22e))
+* put killed buffer last in preview ([58fd3db](https://github.com/liuyinz/binky-mode/commit/58fd3db021d5a85e28cd8a16f5fa2ddf5e2101dc))
+* recent records error in preview ([6a8bca5](https://github.com/liuyinz/binky-mode/commit/6a8bca5fbb7e7250728376aba00fc6ac641ba66e))
+* sorting records in groups according to position ([7e26345](https://github.com/liuyinz/binky-mode/commit/7e2634509bc5167fdb17bc6329ee3677c49afa22))
+* using unique buffer names in preview ([2a375d6](https://github.com/liuyinz/binky-mode/commit/2a375d6c71426a8bc749d90f35b55336b638cd27))
+
+
+### Features
+
+* add option binky-preview-in-groups ([8893242](https://github.com/liuyinz/binky-mode/commit/889324260f0a0c5696819ac16d67598300491eab))
+
+
+
 # [1.2.0](https://github.com/liuyinz/binky-mode/compare/v1.1.0...v1.2.0) (2023-07-12)
 
 
