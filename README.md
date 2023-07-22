@@ -34,7 +34,7 @@ same mechanism like `point-to-register` but with an enhanced experience.
 
 ![binky with preview](image/binky-preview.png)
 
-`?` for toggle preview manually, `q` or `escape` for quit
+`?` for toggle preview manually, `q` or `escape` for quit, `SPC` to toggle in groups
 
 - Call `M-x binky-margin-mode`
 
@@ -124,9 +124,9 @@ Enjoy it.
 - [x] Avoid adding duplicated records
 - [x] Margin indicator support
 - [x] ~~More sorting strategy: frecency, duration~~
+- [x] Add `SPC` to toggle preview records in groups
+- [x] Show same buffer records first in groups view
 - [ ] Add command to store records cross sessions
-- [ ] Add command to cycle sorting strategy in preview
-- [ ] Add option to show same buffer records first in preview
 - [ ] Fringe indicator support
 
 ## FAQ
