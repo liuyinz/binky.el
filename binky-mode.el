@@ -443,35 +443,37 @@ record."
               pos))
     record))
 
-;; (defun binky--prop-get (record prop)
-;;   "Return the property PROP of RECORD, or nil if none."
-;;   (let ((record (binky--normalize record)))
-;;     (cl-case prop
-;;       (mark (nth 0 record))
-;;       (name (nth 1 record))
-;;       (file (nth 1 record))
-;;       (line (nth 3 record))
-;;       (mode (nth 4 record))
-;;       (context (nth 5 record))
-;;       (position (nth 6 record)))))
+(defun binky--prop-get (record prop)
+  "Return the property PROP of RECORD, or nil if none."
+  (let ((record (binky--normalize record)))
+    (cl-case prop
+      (mark (nth 0 record))
+      (name (nth 1 record))
+      (file (nth 2 record))
+      (line (nth 3 record))
+      (mode (nth 4 record))
+      (context (nth 5 record))
+      (position (nth 6 record)))))
 
 (defun binky--manual-preview ()
   "Return manual alist for preview."
   (if binky-preview-in-groups
-      (let (live same killed)
+      (let ((sort-func (lambda (x)
+                         (cl-sort x #'< :key (lambda (x) (binky--prop-get x 'line)))))
+            live killed same)
         (cl-dolist (name (cl-remove-duplicates
-                          (mapcar (lambda (x) (nth 1 (binky--normalize x)))
+                          (mapcar (lambda (x) (binky--prop-get x 'name))
                                   binky-manual-alist)))
           (let (group)
             (cl-dolist (record binky-manual-alist)
-              (when (equal name (nth 1 (binky--normalize record)))
+              (when (equal name (binky--prop-get record 'name))
                 (if (equal name (buffer-name binky-current-buffer))
                     (push record same)
                   (push record group))))
             (if (get-buffer name)
-              (setq live (append live group))
-                (setq killed (append killed group)))))
-        (append same live killed))
+                (setq live (append live (funcall sort-func group)))
+              (setq killed (append killed (funcall sort-func group))))))
+        (append (funcall sort-func same) live killed))
     (reverse binky-manual-alist)))
 
 (defun binky--aggregate (style)
@@ -589,8 +591,11 @@ record."
 (defun binky--preview-propertize (record)
   "Return formatted string for RECORD in preview."
   (let ((killed (not (markerp (cdr record))))
-        (record (binky--normalize record)))
-    (cons (cons 'mark (concat "  " (binky--mark-propertize (nth 0 record) nil killed)))
+        ;; (record (binky--normalize record))
+        )
+    (cons (cons 'mark (concat "  " (binky--mark-propertize
+                                    (binky--prop-get record 'mark)
+                                    nil killed)))
           (cl-mapcar
            (lambda (x y)
 	         (let ((column-face (intern (concat "binky-preview-"
@@ -604,10 +609,11 @@ record."
                (cons x (if (or killed (facep column-face))
                            (propertize y 'face (or cond-face column-face)) y))))
            '(name line mode context)
-           (list (nth 1 record)
-		         (number-to-string (nth 3 record))
-		         (string-remove-suffix "-mode" (symbol-name (nth 4 record)))
-		         (string-trim (nth 5 record)))))))
+           (list (binky--prop-get record 'name)
+		         (number-to-string (binky--prop-get record 'line))
+		         (string-remove-suffix "-mode"
+                                       (symbol-name (binky--prop-get record 'mode)))
+		         (string-trim (binky--prop-get record 'context)))))))
 
 (defun binky--preview-header ()
   "Return formatted string of header for preview."
