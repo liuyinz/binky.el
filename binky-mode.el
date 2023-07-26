@@ -371,10 +371,11 @@ ARGS format is as same as `format' command."
 
 (defun binky--message (mark status)
   "Echo information about MARK according to STATUS."
-  (let ((message-map '((illegal  . "is illegal")
+  (let ((message-map '((illegal   . "is illegal")
                        (overwrite . "is overwritten")
                        (exist     . "already exists")
-                       (non-exist . "doesn't exist"))))
+                       (non-exist . "doesn't exist")
+                       (toggle    .  "toggle groups view"))))
     (message "Mark %s %s."
              (propertize (single-key-description mark t)
                          'face
@@ -795,12 +796,16 @@ window regardless.  Press \\[keyboard-quit] to quit."
                        '(help group illegal))
             (cl-case binky-current-type
               (help (binky--preview))
-              (group (progn
-                       (setq binky-preview-in-groups (not binky-preview-in-groups))
-                       (binky--preview 'redisplay)))
-              (illegal (progn
-                         (binky--message last-input-event 'illegal)
-                         (sit-for 0.3 'nodisp)))))
+              (group
+               (progn
+                 (setq binky-preview-in-groups (not binky-preview-in-groups))
+                 (binky--preview 'redisplay)
+                 (binky--message last-input-event 'toggle)
+                 (sit-for 0.5 'nodisp)))
+              (illegal
+               (progn
+                 (binky--message last-input-event 'illegal)
+                 (sit-for 0.3 'nodisp)))))
 		  (if (eq binky-current-type 'quit)
               (keyboard-quit)
             (downcase (string-to-char (nreverse (single-key-description
