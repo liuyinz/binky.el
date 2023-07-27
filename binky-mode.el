@@ -727,7 +727,7 @@ face `binky-preview-killed' is used instead."
   (or binky-mark-available
       (setq binky-mark-available
             (cl-remove-if
-             (lambda (x) (memq x (list ?? binky-mark-quit nil)))
+             (lambda (x) (memq x (list ?? ?\  binky-mark-quit nil)))
              (cl-remove-duplicates
               (cl-union (number-sequence ?a ?z)
                         (cons binky-mark-back binky-mark-recent)))))))
@@ -748,7 +748,8 @@ The `help' means to preview records if not exist.
 The `back' means to jump back last position.
 The `recent' means to jump to recent marked buffers.
 The `manual' means to operate on records manually.
-The `delete' means to delete existing mark by uppercase."
+The `shift' means to delete existing mark.
+The `crtl' means to view record without jumping."
   (let ((type (cond
                ((equal mark ?\ ) 'group)
                ((memq mark (cons binky-mark-quit '(?\C-\[ escape))) 'quit)
@@ -758,7 +759,7 @@ The `delete' means to delete existing mark by uppercase."
                ((memq mark (binky--mark-manual)) 'manual)
                ((memq (downcase mark) (binky--mark-manual)) 'shift)
                ((equal (binky--mark-prefix mark) "C") 'ctrl)
-               ((equal (binky--mark-prefix mark) "M") 'alt)
+               ;; ((equal (binky--mark-prefix mark) "M") 'alt)
                (t 'illegal))))
     (and refresh (setq binky-current-type type))
     type))
