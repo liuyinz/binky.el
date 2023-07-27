@@ -41,6 +41,7 @@
 (define-obsolete-variable-alias 'binky-record-sort-by 'binky-recent-sort-by "1.2.0")
 (define-obsolete-variable-alias 'binky-record-distance 'binky-distance "1.2.0")
 (define-obsolete-variable-alias 'binky-record-prune 'binky-prune "1.2.0")
+(define-obsolete-variable-alias 'binky-mark-overwrite 'binky-overwrite "1.2.2")
 (define-obsolete-variable-alias 'binky-preview-auto-first 'binky-preview-order "1.2.0")
 (define-obsolete-face-alias 'binky-preview-column-mark-auto 'binky-preview-mark-recent "1.2.0")
 (define-obsolete-face-alias 'binky-preview-column-mark-back 'binky-preview-mark-back "1.2.0")
@@ -82,11 +83,6 @@ marks.  Letters, digits, punctuation, etc.  If nil, disable the feature."
                  (const :tag "Disable recent marks" nil))
   :group 'binky)
 
-(defcustom binky-mark-overwrite nil
-  "If non-nil, overwrite record with existing mark when call `binky-add'."
-  :type 'boolean
-  :group 'binky)
-
 (defcustom binky-recent-sort-by 'recency
   "Sorting strategy for recent marked records."
   :type '(choice (const :tag "Sort by recency" recency)
@@ -98,6 +94,12 @@ marks.  Letters, digits, punctuation, etc.  If nil, disable the feature."
   "Maximum distance in lines count between positions to be considered equal."
   :type 'integer
   :package-version '(binky-mode . "1.2.0")
+  :group 'binky)
+
+(defcustom binky-overwrite nil
+  "If non-nil, overwrite record with existing mark when call `binky-add'."
+  :type 'boolean
+  :package-version '(binky-mode . "1.2.2")
   :group 'binky)
 
 (defcustom binky-prune nil
@@ -829,14 +831,14 @@ window regardless.  Press \\[keyboard-quit] to quit."
       (binky--message (car record) 'exist)))
    ((not (eq (binky--mark-type mark) 'manual))
     (binky--message mark 'illegal))
-   ((and (binky--mark-get mark) (not binky-mark-overwrite))
+   ((and (binky--mark-get mark) (not binky-overwrite))
     (binky--highlight 'warn)
     (binky--message mark 'exist))
    (t
     (binky--highlight 'add)
     (setf (alist-get mark binky-manual-alist) (point-marker))
     (run-hooks 'binky-manual-alist-update-hook)
-    (and binky-mark-overwrite
+    (and binky-overwrite
          (binky--message mark 'overwrite)))))
 
 (defun binky--mark-delete (mark)
