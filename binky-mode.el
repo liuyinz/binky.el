@@ -355,7 +355,7 @@ MARK is a lowercase letter between a-z.  INFO is a marker or a list of form
 (defvar binky-current-type nil
   "Type of `last-input-event'.")
 
-(defvar binky-mark-available nil
+(defvar binky-mark-legal nil
   "List of legal marks used in all records.")
 
 (defvar binky-mark-manual nil
@@ -382,7 +382,8 @@ ARGS format is as same as `format' command."
              (propertize (single-key-description mark t)
                          'face
                          'binky-preview-mark-manual)
-             (alist-get status message-map))))
+             (alist-get status message-map))
+    (sit-for 0.8 t)))
 
 (defun binky--regexp-match (lst)
   "Return non-nil if current buffer name match the LST."
@@ -724,10 +725,10 @@ face `binky-preview-killed' is used instead."
                 (intern (concat "binky-preview-mark-"
                                 (symbol-name (binky--mark-type mark)))))))
 
-(defun binky--mark-available ()
-  "Generate and return available mark list for jumping."
-  (or binky-mark-available
-      (setq binky-mark-available
+(defun binky--mark-legal ()
+  "Generate and return legal mark list for jumping."
+  (or binky-mark-legal
+      (setq binky-mark-legal
             (cl-remove-if
              (lambda (x) (memq x (list ?? ?\  binky-mark-quit nil)))
              (cl-remove-duplicates
@@ -775,22 +776,22 @@ The `crtl' means to view record without jumping."
 Prefix would be \"C\" (ctrl) or \"M\" (alt)."
   (when-let* ((str (single-key-description mark t))
               ((string-match "\\(C\\|M\\)-\\(.\\)" str))
-              ((memq (string-to-char (match-string 2 str)) (binky--mark-available))))
+              ((memq (string-to-char (match-string 2 str)) (binky--mark-legal))))
     (match-string 1 str)))
 
-(defun binky--mark-read (prompt &optional keep-alive)
+(defun binky--mark-read (prompt &optional preview)
   "Read and return a MARK possibly with preview.
 Prompt with the string PROMPT and  may display a window listing existing
-records after `binky-preview-delay' seconds.  When KEEP-ALIVE is non-nil,
-preview buffer keep alive.
+records after `binky-preview-delay' seconds.  When PREVIEW is non-nil,
+preview records at once.
 
 If `help-char' (or a member of `help-event-list') is pressed, display preview
 window regardless.  Press \\[keyboard-quit] to quit."
   (setq binky-current-buffer (current-buffer))
   ;; (setq binky-current-type nil)
-  (and keep-alive (binky--preview 'redisplay))
+  (and preview (binky--preview 'redisplay))
   (let ((timer (when (and (numberp binky-preview-delay)
-                          (null keep-alive))
+                          (null preview))
 		         (run-with-timer binky-preview-delay nil
                                  (apply-partially #'binky--preview 'redisplay)))))
     (unwind-protect
@@ -803,18 +804,16 @@ window regardless.  Press \\[keyboard-quit] to quit."
                (progn
                  (setq binky-preview-in-groups (not binky-preview-in-groups))
                  (binky--preview 'redisplay)
-                 (binky--message last-input-event 'toggle)
-                 (sit-for 0.5 'nodisp)))
+                 (binky--message last-input-event 'toggle)))
               (illegal
                (progn
-                 (binky--message last-input-event 'illegal)
-                 (sit-for 0.3 'nodisp)))))
+                 (binky--message last-input-event 'illegal)))))
 		  (if (eq binky-current-type 'quit)
               (keyboard-quit)
             (downcase (string-to-char (nreverse (single-key-description
                                                  last-input-event t))))))
 	  (and (timerp timer) (cancel-timer timer))
-      (when (or (eq binky-current-type 'quit) (null keep-alive))
+      (when (or (eq binky-current-type 'quit) (null preview))
         (binky--preview 'close)))))
 
 (defun binky--mark-add (mark)
@@ -917,7 +916,7 @@ window regardless.  Press \\[keyboard-quit] to quit."
   (binky--mark-view mark))
 
 ;;;###autoload
-(defun binky-binky (mark &optional keep-alive)
+(defun binky-binky (mark &optional persist)
   "Add, delete or jump records with MARK in one command.
 
 If MARK prefix is shift+, then call `binky-delete'.
@@ -925,9 +924,9 @@ If MARK prefix is ctrl+, then call `binky-view'.
 If MARK prefix is nil and exists, then call `binky-jump'.
 If MARK prefix is nil and doesn't exist, then call `binky-add'.
 
-Interactively, KEEP-ALIVE is the prefix argument.  With no prefix argument,
-it works as same as single command.  With a prefix argument, preview the
-records with no delay and keep alive until \\[keyboard-quit] pressed."
+Interactively, PERSIST is the prefix argument.  With no prefix argument,
+it works as same as single command.  With a prefix argument, repeating commands
+until \\[keyboard-quit] pressed."
   (interactive (list (binky--mark-read
                       (propertize "Binky:" 'face
                                   (if current-prefix-arg
@@ -943,7 +942,7 @@ records with no delay and keep alive until \\[keyboard-quit] pressed."
          (if (eq binky-current-type 'manual)
              (binky--mark-add mark)
            (binky--message mark 'illegal)))))
-  (when keep-alive
+  (when persist
     (binky--preview 'redisplay)
     (call-interactively #'binky-binky)))
 
