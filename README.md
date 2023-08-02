@@ -11,7 +11,7 @@ same mechanism like `point-to-register` but with an enhanced experience.
 
 <!-- markdown-toc start -->
 
-**Table of Contents**
+## Contents
 
 - [binky-mode](#binky-mode)
   - [Screenshot](#screenshot)
@@ -59,8 +59,8 @@ Clone and add to `load-path`, require the package.
 
 - Melpa
 
-This package is available on [MELPA][melpa].
-Install with `M-x package-install` <kbd>RET</kbd> `binky-mode` from within Emacs.
+This package is available on [MELPA].
+Install with `M-x package-install` `RET` `binky-mode` from within Emacs.
 
 ## Usage
 
@@ -76,13 +76,18 @@ Install with `M-x package-install` <kbd>RET</kbd> `binky-mode` from within Emacs
 ```
 
 - `binky-add` : add current position to records
+
 - `binky-delete` : delete existed position from records
+
 - `binky-jump` : jump to position of records
+
 - `binky-view` : view the position of records in other window
+
 - `binky-margin-mode` : toggle to enable or disable margin indicator feature
+
 - `binky-recent-toggle` : toggle to enable or disable recent jump feature
+
 - `binky-binky` : one command to rule all.
-  e.g:
 
   - press `j`, if record `j` exists, call `binky-jump`, otherwise call `binky-add`.
   - press `J`, call `binky-delete`.
@@ -102,16 +107,16 @@ Lots of options are provided, see customization part in file.
 
 ## Comparison
 
-- [Dogears](https://github.com/alphapapa/dogears.el)
+[Dogears](https://github.com/alphapapa/dogears.el)
 
-  - Bookmark style record
-  - More information: relevance, within, directory, etc
+- Bookmark style record
+- More information: relevance, within, directory, etc
 
-- [Binky-mode](https://github.com/liuyinz/binky-mode)
+[Binky-mode](https://github.com/liuyinz/binky-mode)
 
-  - Register style record
-  - Vim-like mark and jump
-  - Flexible and customizable
+- Register style record
+- Vim-like mark and jump
+- Flexible and customizable
 
 I have used dogears for several months, and it's great in most features except so many information
 I don't need. A better and [Vim-marks](https://vim.fandom.com/wiki/Using_marks) style jumping system is the top priority for me.
@@ -131,40 +136,40 @@ Enjoy it.
 
 ## FAQ
 
-1. `binky-margin-mode` conflicts with other packages like [flycheck](https://github.com/flycheck/flycheck), [diff-hl](https://github.com/dgutov/diff-hl), linum-mode(built-in), etc ?
+- `binky-margin-mode` conflicts with other packages like [flycheck](https://github.com/flycheck/flycheck), [diff-hl](https://github.com/dgutov/diff-hl), linum-mode(built-in), etc ?
 
-   `binky-margin-mode` supports only margin for now, so solutions here :
+  `binky-margin-mode` supports only margin for now, so solutions here :
 
-   - Use fringe in other packages
+  - Use fringe in other packages
 
-   ```elisp
-   ;; flycheck
-   ;; Use left-fringe or right-fringe
-    (setq flycheck-indication-mode 'left-fringe)
+  ```elisp
+  ;; flycheck
+  ;; Use left-fringe or right-fringe
+   (setq flycheck-indication-mode 'left-fringe)
 
-   ;; diff-hl
-   ;; use fringe by default, don't turn on diff-hl-margin-mode
+  ;; diff-hl
+  ;; use fringe by default, don't turn on diff-hl-margin-mode
 
-   ;; linum-mode
-   ;; don't support fringe, use display-line-numbers-mode (since 26.0.50) instead
-   ```
+  ;; linum-mode
+  ;; don't support fringe, use display-line-numbers-mode (since 26.0.50) instead
+  ```
 
-   - Use different side of margin in other packages
+  - Use different side of margin in other packages
 
-   ```elisp
-   (setq binky-margin-side 'left)
+  ```elisp
+  (setq binky-margin-side 'left)
 
-   ;; flycheck, different margin side
-   (setq flycheck-indication-mode 'right-margin)
+  ;; flycheck, different margin side
+  (setq flycheck-indication-mode 'right-margin)
 
-   ;; diff-hl, different margin side
-   (setq diff-hl-side 'right)
-   (diff-hl-margin-mode)
-   ```
+  ;; diff-hl, different margin side
+  (setq diff-hl-side 'right)
+  (diff-hl-margin-mode)
+  ```
 
-2. All records position change to 1 after run `format-all-buffer` command ?
+- All records position change to 1 after run `format-all-buffer` command ?
 
-   [format-all](https://github.com/lassik/emacs-format-all-the-code) formats buffer by overwriting it's entire content, all markers position would be change to position 1. Please use other formatters like [apheleia](https://github.com/radian-software/apheleia) instead.
+  [format-all](https://github.com/lassik/emacs-format-all-the-code) formats buffer by overwriting it's entire content, all markers position would be change to position 1. Please use other formatters like [apheleia](https://github.com/radian-software/apheleia) instead.
 
 ## License
 
