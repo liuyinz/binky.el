@@ -33,6 +33,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'seq)
 (require 'subr-x)
 
 ;;; Customize
@@ -424,11 +425,11 @@ DISTANCE."
   "Return non-nil if MARKER equals with any record of `binky-manual-alist'.
 When the line MARKER at has no larger distance with DISTANCE, return that
 record."
-  (cl-some (lambda (x)
-             (and (markerp (cdr x))
-                  (binky--equal-p marker (cdr x) distance)
-                  x))
-           binky-manual-alist))
+  (seq-some (lambda (x)
+              (and (markerp (cdr x))
+                   (binky--equal-p marker (cdr x) distance)
+                   x))
+            binky-manual-alist))
 
 (defun binky--normalize (record)
   "Return RECORD in normalized style (mark name file line mode context position)."
@@ -462,14 +463,13 @@ record."
 (defun binky--manual-preview ()
   "Return manual alist for preview."
   (if binky-preview-in-groups
-      (let ((sort-func (lambda (x)
-                         (cl-sort x #'< :key (lambda (x) (binky--prop-get x 'line)))))
+      (let ((sort-func (lambda (x) (seq-sort-by (lambda (x) (binky--prop-get x 'line))
+                                                #'< x)))
             live killed same)
-        (cl-dolist (name (cl-remove-duplicates
-                          (mapcar (lambda (x) (binky--prop-get x 'name))
-                                  binky-manual-alist)))
+        (dolist (name (seq-uniq (mapcar (lambda (x) (binky--prop-get x 'name))
+                                        binky-manual-alist)))
           (let (group)
-            (cl-dolist (record binky-manual-alist)
+            (dolist (record binky-manual-alist)
               (when (equal name (binky--prop-get record 'name))
                 (if (equal name (buffer-name binky-current-buffer))
                     (push record same)
@@ -482,8 +482,8 @@ record."
 
 (defun binky--aggregate (style)
   "Return aggregated records according to STYLE."
-  (cl-remove
-   nil
+  (seq-remove
+   #'null
    (cl-case style
      (sum
       ;; orderless, non-uniq
@@ -491,18 +491,18 @@ record."
      (margin
       ;; orderless, uniq
       (cons binky-back-record
-            (cl-remove-if (lambda (x)
-                            (or (not (markerp (cdr x)))
-                                (eq (cdr x) (cdr binky-back-record))))
-                          (append binky-manual-alist binky-recent-alist))))
+            (seq-remove (lambda (x)
+                          (or (not (markerp (cdr x)))
+                              (eq (cdr x) (cdr binky-back-record))))
+                        (append binky-manual-alist binky-recent-alist))))
      (preview
       ;; order, uniq
-      (cl-reduce #'append
-                 (mapcar
-                  (lambda (x) (alist-get x `((back   . ,(list binky-back-record))
-                                             (recent . ,binky-recent-alist)
-                                             (manual . ,(binky--manual-preview)))))
-                  binky-preview-order))))))
+      (seq-reduce #'append
+                  (mapcar
+                   (lambda (x) (alist-get x `((back   . ,(list binky-back-record))
+                                              (recent . ,binky-recent-alist)
+                                              (manual . ,(binky--manual-preview)))))
+                   binky-preview-order) nil)))))
 
 (defun binky--auto-update ()
   "Update `binky-recent-alist' and `binky-back-record' automatically."
@@ -517,20 +517,20 @@ record."
     (if (null marks)
         (setq binky-recent-alist nil)
       ;; remove current-buffer and last buffer(if current-buffer if minibuffer)
-      (cl-dolist (buf (nthcdr (if (minibufferp (current-buffer)) 2 1) (buffer-list)))
+      (dolist (buf (nthcdr (if (minibufferp (current-buffer)) 2 1) (buffer-list)))
         (with-current-buffer buf
-          (unless (cl-some #'funcall (append binky-exclude-functions
-                                             '(binky--exclude-mode-p
-                                               binky--exclude-regexp-p)))
+          (unless (seq-some #'funcall (append binky-exclude-functions
+                                              '(binky--exclude-mode-p
+                                                binky--exclude-regexp-p)))
             (push (point-marker) result))))
       ;; delete marker duplicated with `binky-manual-alist'
-      (setq result (cl-remove-if (lambda (m) (binky--duplicated-p m 0)) result))
+      (setq result (seq-remove (lambda (m) (binky--duplicated-p m 0)) result))
       (setq binky-recent-alist
-            (cl-mapcar (lambda (x y) (cons x y))
-                       marks
-                       (if (equal binky-recent-sort-by 'recency)
-                           (reverse result)
-                         (cl-sort result #'> :key #'binky--frequency-get)))))
+            (seq-mapn (lambda (x y) (cons x y))
+                      marks
+                      (if (equal binky-recent-sort-by 'recency)
+                          (reverse result)
+                        (seq-sort-by #'binky--frequency-get #'> result)))))
     (run-hooks 'binky-recent-alist-update-hook)))
 
 (defun binky--swap-out ()
@@ -564,17 +564,17 @@ record."
 
 (defun binky--preview-column ()
   "Return alist of elements (COLUMN . WIDTH) to display preview."
-  (cl-remove-if (lambda (x) (null (cdr x)))
-                (mapcar (lambda (f)
-                          (let ((width (if (binky--preview-horizontal-p)
-                                           (nth 2 f)
-                                         (nth 1 f))))
-  					        (cons (nth 0 f)
-                                  (ignore-errors
-                                    (if (< 0 width 1)
-                                        (ceiling (* width (frame-width)))
-                                      width)))))
-  				        binky-preview-column)))
+  (seq-remove (lambda (x) (null (cdr x)))
+              (mapcar (lambda (f)
+                        (let ((width (if (binky--preview-horizontal-p)
+                                         (nth 2 f)
+                                       (nth 1 f))))
+  					      (cons (nth 0 f)
+                                (ignore-errors
+                                  (if (< 0 width 1)
+                                      (ceiling (* width (frame-width)))
+                                    width)))))
+  				      binky-preview-column)))
 
 (defun binky--preview-extract (alist)
   "Return truncated string with selected columns according to ALIST."
@@ -594,13 +594,11 @@ record."
 
 (defun binky--preview-propertize (record)
   "Return formatted string for RECORD in preview."
-  (let ((killed (not (markerp (cdr record))))
-        ;; (record (binky--normalize record))
-        )
+  (let ((killed (not (markerp (cdr record)))))
     (cons (cons 'mark (concat "  " (binky--mark-propertize
                                     (binky--prop-get record 'mark)
                                     nil killed)))
-          (cl-mapcar
+          (seq-mapn
            (lambda (x y)
 	         (let ((column-face (intern (concat "binky-preview-"
                                                 (symbol-name x))))
@@ -652,7 +650,7 @@ redisplay the preview.  If it's nil, toggle the preview."
 		     (dup (and back (rassoc (cdr back) (cdr total)))))
         (erase-buffer)
 	    ;; insert header if non-nil
-	    (when (and (cl-some #'integerp (mapcar #'cdr (binky--preview-column)))
+	    (when (and (seq-some #'integerp (mapcar #'cdr (binky--preview-column)))
 			       binky-preview-show-header)
 	      (insert (binky--preview-header)))
 	    (when dup
@@ -729,9 +727,9 @@ face `binky-preview-killed' is used instead."
   "Generate and return legal mark list for jumping."
   (or binky-mark-legal
       (setq binky-mark-legal
-            (cl-remove-if
+            (seq-remove
              (lambda (x) (memq x (list ?? ?\  binky-mark-quit nil)))
-             (cl-remove-duplicates
+             (seq-uniq
               (cl-union (number-sequence ?a ?z)
                         (cons binky-mark-back binky-mark-recent)))))))
 
@@ -788,7 +786,6 @@ preview records at once.
 If `help-char' (or a member of `help-event-list') is pressed, display preview
 window regardless.  Press \\[keyboard-quit] to quit."
   (setq binky-current-buffer (current-buffer))
-  ;; (setq binky-current-type nil)
   (and preview (binky--preview 'redisplay))
   (let ((timer (when (and (numberp binky-preview-delay)
                           (null preview))
@@ -921,8 +918,8 @@ window regardless.  Press \\[keyboard-quit] to quit."
 
 If MARK prefix is shift+, then call `binky-delete'.
 If MARK prefix is ctrl+, then call `binky-view'.
-If MARK prefix is nil and exists, then call `binky-jump'.
-If MARK prefix is nil and doesn't exist, then call `binky-add'.
+If MARK prefix is nil and mark exists, then call `binky-jump'.
+If MARK prefix is nil and mark doesn't exist, then call `binky-add'.
 
 Interactively, PERSIST is the prefix argument.  With no prefix argument,
 it works as same as single command.  With a prefix argument, repeating commands
