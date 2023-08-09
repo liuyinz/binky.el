@@ -49,7 +49,6 @@ same mechanism like `point-to-register` but with an enhanced experience.
 ### dependencies
 
 - Emacs, version >= 26.3
-- cl-lib
 
 ### package
 
