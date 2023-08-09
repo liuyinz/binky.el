@@ -95,7 +95,7 @@ Install with `M-x package-install` `RET` `binky-mode` from within Emacs.
 
   With `C-u` prefix, keep editing until quit
 
-- `binky-next-in-buffer` and `binky-previous-in-buffer`: jump bwtween in current buffer
+- `binky-next-in-buffer` and `binky-previous-in-buffer`: jump between in current buffer
 
 ## Customization
 
