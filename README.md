@@ -87,13 +87,15 @@ Install with `M-x package-install` `RET` `binky-mode` from within Emacs.
 
 - `binky-recent-toggle` : toggle to enable or disable recent jump feature
 
-- `binky-binky` : one command to rule all.
+- `binky-binky` : one command to rule all
 
   - press `j`, if record `j` exists, call `binky-jump`, otherwise call `binky-add`.
   - press `J`, call `binky-delete`.
   - press `ctrl-j`, view the record `j` in other window without jumping.
 
   With `C-u` prefix, keep editing until quit
+
+- `binky-next-in-buffer` and `binky-previous-in-buffer`: jump bwtween in current buffer
 
 ## Customization
 
