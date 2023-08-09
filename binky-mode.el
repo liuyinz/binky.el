@@ -956,6 +956,35 @@ until \\[keyboard-quit] pressed."
   (binky--auto-update))
 
 ;;;###autoload
+(defun binky-next-in-buffer (&optional backward)
+  "Jump to next manual record in current buffer if exists.
+If BACKWARD is non-nil, jump to previous one."
+  (interactive)
+  (if-let* ((order (if backward #'> #'<))
+            (sorted (seq-sort-by (lambda (x) (binky--prop-get x 'line))
+                                 order
+                                 (seq-filter (lambda (x)
+                                               (equal (buffer-name (current-buffer))
+                                                      (binky--prop-get x 'name)))
+                                             binky-manual-alist))))
+      (if (and (equal (length sorted) 1)
+               (seq-some (lambda (x) (equal (binky--prop-get x 'position) (point)))
+                         sorted))
+          (message "Point is on the only record in current buffer.")
+        (binky--mark-jump
+         (car (seq-find (lambda (x)
+                          (funcall order (point) (binky--prop-get x 'position)))
+                        sorted
+                        (car sorted)))))
+    (message "No records in current buffer.")))
+
+;;;###autoload
+(defun binky-previous-in-buffer ()
+  "Jump to previous manual record in current buffer if exists."
+  (interactive)
+  (binky-next-in-buffer t))
+
+;;;###autoload
 (define-minor-mode binky-mode
   "Toggle rabbit-jumping style position changes.
 This global minor mode allows you to jump easily between buffers
