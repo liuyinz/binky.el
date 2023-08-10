@@ -92,7 +92,7 @@ marks.  Letters, digits, punctuation, etc.  If nil, disable the feature."
   :group 'binky)
 
 (defcustom binky-distance 5
-  "Maximum distance in lines count between positions to be considered equal."
+  "Maximum distance in lines count between records to be considered same."
   :type 'integer
   :package-version '(binky-mode . "1.2.0")
   :group 'binky)
@@ -410,25 +410,25 @@ ARGS format is as same as `format' command."
   "Return value of `binky-frequency' of buffer which MARKER points to."
   (or (buffer-local-value 'binky-frequency (marker-buffer marker)) 0))
 
-(defun binky--equal-p (x y &optional distance)
-  "Return non-nil if marker X and Y equal.
-When they are in same buffer and line distance is no more larger than
-DISTANCE."
-  (and (markerp x) (markerp y)
-       (eq (marker-buffer x) (marker-buffer y))
-       (with-current-buffer (marker-buffer x)
-         (<= (abs (- (line-number-at-pos x 'absolute)
-                     (line-number-at-pos y 'absolute)))
-             (or distance binky-distance 0)))))
+(defun binky--distance (x y)
+  "Return line distance between marker X and Y when in same buffer."
+  (when-let* (((markerp x))
+              ((markerp y))
+              ((eq (marker-buffer x) (marker-buffer y)))
+              (buf (marker-buffer x)))
+    (with-current-buffer buf
+      (abs (- (line-number-at-pos x 'absolute)
+              (line-number-at-pos y 'absolute))))))
 
 (defun binky--duplicated-p (marker &optional distance)
   "Return non-nil if MARKER equals with any record of `binky-manual-alist'.
 When the line MARKER at has no larger distance with DISTANCE, return that
 record."
-  (seq-some (lambda (x)
+  (seq-find (lambda (x)
               (and (markerp (cdr x))
-                   (binky--equal-p marker (cdr x) distance)
-                   x))
+                   (ignore-errors
+                     (<= (binky--distance marker (cdr x))
+                         (or distance binky-distance)))))
             binky-manual-alist))
 
 (defun binky--normalize (record)
@@ -460,35 +460,15 @@ record."
       (context (nth 5 record))
       (position (nth 6 record)))))
 
-(defun binky--manual-preview ()
-  "Return manual alist for preview."
-  (if binky-preview-in-groups
-      (let ((sort-func (lambda (x) (seq-sort-by (lambda (x) (binky--prop-get x 'line))
-                                                #'< x)))
-            live killed same)
-        (dolist (name (seq-uniq (mapcar (lambda (x) (binky--prop-get x 'name))
-                                        binky-manual-alist)))
-          (let (group)
-            (dolist (record binky-manual-alist)
-              (when (equal name (binky--prop-get record 'name))
-                (if (equal name (buffer-name binky-current-buffer))
-                    (push record same)
-                  (push record group))))
-            (if (get-buffer name)
-                (setq live (append live (funcall sort-func group)))
-              (setq killed (append killed (funcall sort-func group))))))
-        (append (funcall sort-func same) live killed))
-    (reverse binky-manual-alist)))
-
 (defun binky--aggregate (style)
   "Return aggregated records according to STYLE."
-  (seq-remove
-   #'null
+  (delq
+   nil
    (cl-case style
      (sum
       ;; orderless, non-uniq
       (cons binky-back-record (append binky-manual-alist binky-recent-alist)))
-     (margin
+     (indicator
       ;; orderless, uniq
       (cons binky-back-record
             (seq-remove (lambda (x)
@@ -499,9 +479,10 @@ record."
       ;; order, uniq
       (seq-reduce #'append
                   (mapcar
-                   (lambda (x) (alist-get x `((back   . ,(list binky-back-record))
-                                              (recent . ,binky-recent-alist)
-                                              (manual . ,(binky--manual-preview)))))
+                   (lambda (x)
+                     (alist-get x `((back   . ,(list binky-back-record))
+                                    (recent . ,binky-recent-alist)
+                                    (manual . ,(binky--manual-alist-preview)))))
                    binky-preview-order) nil)))))
 
 (defun binky--auto-update ()
@@ -558,13 +539,40 @@ record."
     (unless (equal orig binky-manual-alist)
       (run-hooks 'binky-manual-alist-update-hook))))
 
+(defun binky--manual-alist-in-group (&optional name order)
+  "Return alist of manual records which is in same buffer or file.
+NAME is buffer or file name, if nil current buffer name is used.
+ORDER is `<' or `>' to sort records by position, otherwise no sorting."
+  (let ((filtered (seq-filter (lambda (x)
+                                (equal (or name (buffer-name (current-buffer)))
+                                       (binky--prop-get x 'name)))
+                              binky-manual-alist)))
+    (if (memq order '(< >))
+        (seq-sort-by (lambda (x) (binky--prop-get x 'position)) order filtered)
+      filtered)))
+
+(defun binky--manual-alist-preview ()
+  "Return manual alist for preview."
+  (if binky-preview-in-groups
+      (let (live killed same)
+        (dolist (name (seq-uniq (mapcar (lambda (x) (binky--prop-get x 'name))
+                                        binky-manual-alist)))
+          (let ((group (binky--manual-alist-in-group name #'<)))
+            (if (equal name (buffer-name binky-current-buffer))
+                (setq same group)
+              (if (get-buffer name)
+                  (setq live (append live group))
+                (setq killed (append killed group))))))
+        (append same live killed))
+    (reverse binky-manual-alist)))
+
 (defun binky--preview-horizontal-p ()
   "Return non-nil if binky preview buffer in horizontally."
   (memq binky-preview-side '(left right)))
 
 (defun binky--preview-column ()
   "Return alist of elements (COLUMN . WIDTH) to display preview."
-  (seq-remove (lambda (x) (null (cdr x)))
+  (seq-filter #'cdr
               (mapcar (lambda (f)
                         (let ((width (if (binky--preview-horizontal-p)
                                          (nth 2 f)
@@ -680,7 +688,7 @@ redisplay the preview.  If it's nil, toggle the preview."
     (dolist (ov (overlays-in (point-min) (point-max)))
       (when (overlay-get ov 'binky) (delete-overlay ov))))
   (when update
-    (dolist (record (binky--aggregate 'margin))
+    (dolist (record (binky--aggregate 'indicator))
       (when-let* ((marker (cdr record))
                   (pos (marker-position marker))
                   ((eq (marker-buffer marker) (current-buffer)))
@@ -867,7 +875,7 @@ window regardless.  Press \\[keyboard-quit] to quit."
 		  (goto-char (car (last info))))
         (binky--highlight 'jump)
         (when (and (characterp binky-mark-back)
-                   (not (binky--equal-p last (point-marker) 0)))
+                   (not (equal (binky--distance last (point-marker)) 0)))
           (setq binky-back-record (cons binky-mark-back last))
           (run-hooks 'binky-back-record-update-hook)))
     (binky--message mark 'non-exist)))
@@ -961,15 +969,9 @@ until \\[keyboard-quit] pressed."
 If BACKWARD is non-nil, jump to previous one."
   (interactive)
   (if-let* ((order (if backward #'> #'<))
-            (sorted (seq-sort-by (lambda (x) (binky--prop-get x 'line))
-                                 order
-                                 (seq-filter (lambda (x)
-                                               (equal (buffer-name (current-buffer))
-                                                      (binky--prop-get x 'name)))
-                                             binky-manual-alist))))
+            (sorted (binky--manual-alist-in-group nil order)))
       (if (and (equal (length sorted) 1)
-               (seq-some (lambda (x) (equal (binky--prop-get x 'position) (point)))
-                         sorted))
+               (equal (binky--distance (point-marker) (cdar sorted)) 0))
           (message "Point is on the only record in current buffer.")
         (binky--mark-jump
          (car (seq-find (lambda (x)
