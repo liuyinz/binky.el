@@ -24,7 +24,7 @@
 
 ;;; Code:
 
-(require 'binky-mode)
+(require 'binky)
 
 (defvar-local binky-margin-width-orig nil
   "Default margin width of user setting.")

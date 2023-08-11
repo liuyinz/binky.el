@@ -1,4 +1,4 @@
-;;; binky-mode.el --- Jump between points like a rabbit -*- lexical-binding: t -*-
+;;; binky.el --- Jump between points like a rabbit -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2022, 2023 liuyinz
 
@@ -90,19 +90,19 @@ marks.  Letters, digits, punctuation, etc.  If nil, disable the feature."
   "Sorting strategy for recent marked records."
   :type '(choice (const :tag "Sort by recency" recency)
                  (Const :tag "Sort by frequency" frequency))
-  :package-version '(binky-mode . "1.2.0")
+  :package-version '(binky . "1.2.0")
   :group 'binky)
 
 (defcustom binky-distance 5
   "Maximum distance in lines count between records to be considered same."
   :type 'integer
-  :package-version '(binky-mode . "1.2.0")
+  :package-version '(binky . "1.2.0")
   :group 'binky)
 
 (defcustom binky-overwrite nil
   "If non-nil, overwrite record with existing mark when call `binky-add'."
   :type 'boolean
-  :package-version '(binky-mode . "1.2.2")
+  :package-version '(binky . "1.2.2")
   :group 'binky)
 
 (defcustom binky-prune nil
@@ -115,7 +115,7 @@ marks.  Letters, digits, punctuation, etc.  If nil, disable the feature."
   "List of regexps for buffer name included in `binky-recent-alist'.
 For example, buffer *scratch* is always included by default."
   :type '(repeat string)
-  :package-version '(binky-mode . "1.2.0")
+  :package-version '(binky . "1.2.0")
   :group 'binky)
 
 (defcustom binky-exclude-regexps
@@ -184,7 +184,7 @@ Usually, `context' column should be at the end and not truncated."
           :options '(mark name line mode context)
 		  :value-type '(group (choice integer (const nil))
 							  (choice integer (const nil))))
-  :package-version '(binky-mode . "1.2.0")
+  :package-version '(binky . "1.2.0")
   :group 'binky)
 
 (defcustom binky-preview-ellipsis ".."
@@ -197,13 +197,13 @@ Usually, `context' column should be at the end and not truncated."
   :type '(repeat (choice (const back)
                          (const manual)
                          (const recent)))
-  :package-version '(binky-mode . "1.2.0")
+  :package-version '(binky . "1.2.0")
   :group 'binky)
 
 (defcustom binky-preview-in-groups nil
   "If non-nil, preview manual records in group by buffer."
   :type 'boolean
-  :package-version '(binky-mode . "1.2.1")
+  :package-version '(binky . "1.2.1")
   :group 'binky)
 
 (defcustom binky-preview-show-header t
@@ -221,7 +221,7 @@ If nil, disable the highlight feature."
   "Which side to show indicator on margin or fringe."
   :type '(choice (const left)
                  (const right))
-  :package-version '(binky-mode . "1.2.2")
+  :package-version '(binky . "1.2.2")
   :group 'binky)
 
 (defface binky-preview-header
@@ -967,5 +967,5 @@ you used and marked position."
       (cancel-timer binky-frequency-timer)
       (setq binky-frequency-timer nil))))
 
-(provide 'binky-mode)
-;;; binky-mode.el ends here
+(provide 'binky)
+;;; binky.el ends here

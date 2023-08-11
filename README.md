@@ -65,12 +65,14 @@ Install with `M-x package-install` `RET` `binky-mode` from within Emacs.
 
 ```elisp
 ;; Directly
-(require 'binky-mode)
+(require 'binky)
 (binky-mode)
+;; margin highlight support
+(require 'binky-margin)
 (binky-margin-mode)
 
 ;; Or with `use-package`, etc
-(use-package binky-mode
+(use-package binky
   :hook (after-init-hook . (lambda () (binky-mode) (binky-margin-mode))))
 ```
 
@@ -81,8 +83,6 @@ Install with `M-x package-install` `RET` `binky-mode` from within Emacs.
 - `binky-jump` : jump to position of records
 
 - `binky-view` : view the position of records in other window
-
-- `binky-margin-mode` : toggle to enable or disable margin indicator feature
 
 - `binky-recent-toggle` : toggle to enable or disable recent jump feature
 
@@ -95,6 +95,8 @@ Install with `M-x package-install` `RET` `binky-mode` from within Emacs.
   With `C-u` prefix, keep editing until quit
 
 - `binky-next-in-buffer` and `binky-previous-in-buffer`: jump between in current buffer
+
+- `binky-margin-mode` : toggle to enable or disable margin indicator feature
 
 ## Customization
 
@@ -158,7 +160,7 @@ Enjoy it.
   - Use different side of margin in other packages
 
   ```elisp
-  (setq binky-margin-side 'left)
+  (setq binky-indicator-side 'left)
 
   ;; flycheck, different margin side
   (setq flycheck-indication-mode 'right-margin)
