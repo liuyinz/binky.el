@@ -365,8 +365,9 @@ ARGS format is as same as `format' command."
     (goto-char (point-max))
     (insert "\n" (apply #'format args))))
 
-(defun binky--message (mark status)
-  "Echo information about MARK according to STATUS."
+(defun binky--message (mark status &optional duration)
+  "Echo information about MARK according to STATUS.
+Wait for DURATION seconds and then redisplay."
   (let ((message-map '((illegal   . "is illegal")
                        (overwrite . "is overwritten")
                        (exist     . "already exists")
@@ -377,7 +378,7 @@ ARGS format is as same as `format' command."
                          'face
                          'binky-preview-mark-manual)
              (alist-get status message-map))
-    (sit-for 0.8 t)))
+    (sit-for (or duration 0.8) t)))
 
 (defun binky--regexp-match (lst)
   "Return non-nil if current buffer name match the LST."
@@ -433,12 +434,12 @@ record."
         (list (car record)
               (or (buffer-name) "")
               (buffer-file-name)
-              (line-number-at-pos pos 'absolute)
               major-mode
+              (line-number-at-pos pos 'absolute)
+              pos
               (save-excursion
                 (goto-char info)
-                (buffer-substring (line-beginning-position) (line-end-position)))
-              pos))
+                (buffer-substring (line-beginning-position) (line-end-position)))))
     record))
 
 (defun binky--prop-get (record prop)
@@ -448,10 +449,10 @@ record."
       (mark (nth 0 record))
       (name (nth 1 record))
       (file (nth 2 record))
-      (line (nth 3 record))
-      (mode (nth 4 record))
-      (context (nth 5 record))
-      (position (nth 6 record)))))
+      (mode (nth 3 record))
+      (line (nth 4 record))
+      (position (nth 5 record))
+      (context (nth 6 record)))))
 
 (defun binky--aggregate (style)
   "Return aggregated records according to STYLE."
@@ -497,7 +498,7 @@ record."
                                               '(binky--exclude-mode-p
                                                 binky--exclude-regexp-p)))
             (push (point-marker) result))))
-      ;; delete marker duplicated with `binky-manual-alist'
+      ;; delete recent marker on the same line with anyone in `binky-manual-alist'
       (setq result (seq-remove (lambda (m) (binky--duplicated-p m 0)) result))
       (setq binky-recent-alist
             (seq-mapn (lambda (x y) (cons x y))
