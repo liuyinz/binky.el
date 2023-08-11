@@ -1,7 +1,7 @@
-# binky-mode
+# binky
 
 [![License GPL 3](https://img.shields.io/badge/license-GPL_3-green.svg?style=flat)](LICENSE)
-[![MELPA](http://melpa.org/packages/binky-mode-badge.svg)](http://melpa.org/#/binky-mode)
+[![MELPA](http://melpa.org/packages/binky-badge.svg)](http://melpa.org/#/binky)
 
 Jump between points like a rabbit !
 
@@ -13,7 +13,7 @@ same mechanism like `point-to-register` but with an enhanced experience.
 
 ## Contents
 
-- [binky-mode](#binky-mode)
+- [binky](#binky)
   - [Screenshot](#screenshot)
   - [Install](#install)
     - [dependencies](#dependencies)
@@ -59,7 +59,7 @@ Clone and add to `load-path`, require the package.
 - Melpa
 
 This package is available on [MELPA].
-Install with `M-x package-install` `RET` `binky-mode` from within Emacs.
+Install with `M-x package-install` `RET` `binky` from within Emacs.
 
 ## Usage
 
@@ -115,7 +115,7 @@ Lots of options are provided, see customization part in file.
 - Bookmark style record
 - More information: relevance, within, directory, etc
 
-[Binky-mode](https://github.com/liuyinz/binky-mode)
+[Binky](https://github.com/liuyinz/binky.el)
 
 - Register style record
 - Vim-like mark and jump
@@ -123,7 +123,7 @@ Lots of options are provided, see customization part in file.
 
 I have used dogears for several months, and it's great in most features except so many information
 I don't need. A better and [Vim-marks](https://vim.fandom.com/wiki/Using_marks) style jumping system is the top priority for me.
-While evil is too heavy, so I wrote `binky-mode` to imitate parts of features.
+While evil is too heavy, so I wrote this package to imitate parts of features.
 
 Enjoy it.
 
@@ -139,9 +139,9 @@ Enjoy it.
 
 ## FAQ
 
-- `binky-margin-mode` conflicts with other packages like [flycheck](https://github.com/flycheck/flycheck), [diff-hl](https://github.com/dgutov/diff-hl), linum-mode(built-in), etc ?
+- `binky-margin` conflicts with other packages like [flycheck](https://github.com/flycheck/flycheck), [diff-hl](https://github.com/dgutov/diff-hl), linum-mode(built-in), etc ?
 
-  `binky-margin-mode` supports only margin for now, so solutions here :
+  `binky` supports only margin for now, so solutions here :
 
   - Use fringe in other packages
 
@@ -178,4 +178,4 @@ Enjoy it.
 
 See [LICENSE](LICENSE).
 
-[melpa]: http://melpa.org/#/binky-mode
+[melpa]: http://melpa.org/#/binky
