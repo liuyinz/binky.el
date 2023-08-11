@@ -31,6 +31,6 @@ jobs:
         uses: leotaku/elisp-check@master
         with:
           check: melpa
-          file: "binky-mode.el"
+          file: "binky.el"
           ignore_warnings: false
           warnings_as_errors: false
