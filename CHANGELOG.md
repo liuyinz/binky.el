@@ -1,4 +1,18 @@
 # Changelog
+## 1.2.2 (2023-08-11)
+
+
+### Bug Fixes
+
+* ci error on missing file ([5915e42](https://github.com/liuyinz/emacs.d/commit/5915e42b7379c4b7d5242d09ca824dc1e9ca04a6))
+
+
+### Features
+
+* add commands jumping to next/previous record in current buffer ([3fe9656](https://github.com/liuyinz/emacs.d/commit/3fe965685d00da7d87c748e9098a9bbaa8a0fb58))
+
+
+
 ## [1.2.1](https://github.com/liuyinz/binky-mode/compare/v1.2.0...v1.2.1) (2023-07-22)
 
 
