@@ -36,6 +36,10 @@
 (require 'seq)
 (require 'subr-x)
 
+(declare-function ffip-project-root "find-file-in-project")
+(declare-function project-root "project")
+(declare-function projectile-project-root "projectile")
+
 ;;; Customize
 
 (define-obsolete-variable-alias 'binky-mark-auto 'binky-mark-recent "1.2.0")
@@ -91,6 +95,18 @@ marks.  Letters, digits, punctuation, etc.  If nil, disable the feature."
   :type '(choice (const :tag "Sort by recency" recency)
                  (Const :tag "Sort by frequency" frequency))
   :package-version '(binky . "1.2.0")
+  :group 'binky)
+
+(defcustom binky-project-detection 'auto
+  "How to detect the project root of binky records.
+nil means to use `default-directory'.
+`auto' means to detect the following options in order."
+  :type '(choice (const :tag "Auto-detect" auto)
+                 (const :tag "Find File in Project" ffip)
+                 (const :tag "Projectile" projectile)
+                 (const :tag "Built-in Project" project)
+                 (const :tag "Disable" nil))
+  :package-version '(binky . "1.2.3")
   :group 'binky)
 
 (defcustom binky-distance 5
@@ -156,10 +172,11 @@ If nil, disable preview, unless \\[help] is pressed."
   :group 'binky)
 
 (defcustom binky-preview-column
-  '((mark    0.04  4)
-    (name    0.16  15)
-    (line    0.05  6)
-    (mode    0.12  nil)
+  '((mark    0.03  4)
+    (name    0.14  15)
+    (line    0.04  6)
+    (project 0.14  nil)
+    (mode    0.10  nil)
     (context 0     nil))
   "List of elements (COLUMN VERTICAL HORIZONTAL) to display preview.
 COLUMN is one of five parameters of record, listed in `binky-manual-alist'
@@ -169,6 +186,7 @@ The `mark' is column to show mark.
 The `name' is column to show buffer or file name.
 The `line' is column to show line number.
 The `mode' is column to show major mode.
+The `project' is column to show project directory.
 The `context' is column to show line content.
 
 VERTICAL and HORIZONTAL are width of the COLUMN depended on
@@ -181,10 +199,10 @@ relative based on current frame width.
 Usually, `context' column should be at the end and not truncated."
   :type '(alist
           :key-type symbol
-          :options '(mark name line mode context)
-		  :value-type '(group (choice integer (const nil))
-							  (choice integer (const nil))))
-  :package-version '(binky . "1.2.0")
+          :options '(mark name line project mode context)
+		  :value-type '(group (choice integer float (const nil))
+							  (choice integer float (const nil))))
+  :package-version '(binky . "1.2.3")
   :group 'binky)
 
 (defcustom binky-preview-ellipsis ".."
@@ -273,6 +291,12 @@ If nil, disable the highlight feature."
   "Face used to highlight the major mode of record in preview."
   :group 'binky)
 
+(defface binky-preview-project
+  '((t :inherit font-lock-constant-face))
+  "Face used to highlight the project directory of record in preview."
+  :package-version '(binky . "1.2.3")
+  :group 'binky)
+
 (defface binky-preview-killed
   '((t :inherit font-lock-comment-face))
   "Face used to highlight whole record of killed buffers in preview."
@@ -355,6 +379,8 @@ MARK is a lowercase letter between a-z.  INFO is a marker or a list of form
 (defvar binky-mark-manual nil
   "List of legal marks used in manual records.")
 
+(defvar-local binky--project-root nil
+  "Project path of current buffer located.")
 
 ;;; Functions
 
@@ -379,6 +405,28 @@ Wait for DURATION seconds and then redisplay."
                          'binky-preview-mark-manual)
              (alist-get status message-map))
     (sit-for (or duration 0.8) t)))
+
+(defun binky--project-root ()
+  "Get the path to the project root.
+Return nil if no project was found."
+  (or binky--project-root
+      (setq binky--project-root
+            (cond
+             ((and (memq binky-project-detection '(auto ffip))
+                   (fboundp 'ffip-project-root))
+              (let ((inhibit-message t))
+                (ffip-project-root)))
+             ((and (memq binky-project-detection '(auto projectile))
+                   (bound-and-true-p projectile-mode))
+              (projectile-project-root))
+             ((and (memq binky-project-detection '(auto project))
+                   (fboundp 'project-current))
+              (when-let ((project (project-current)))
+                (expand-file-name
+                 (if (fboundp 'project-root)
+                     (project-root project)
+                   (car (with-no-warnings
+                          (project-roots project)))))))))))
 
 (defun binky--regexp-match (lst)
   "Return non-nil if current buffer name match the LST."
@@ -426,33 +474,36 @@ record."
             binky-manual-alist))
 
 (defun binky--normalize (record)
-  "Return RECORD in normalized style (mark name file line mode context position)."
+  "Return RECORD in format (mark bufname line project mode context filename pos)."
   (if-let* ((info (cdr record))
             ((markerp info))
             (pos (marker-position info)))
       (with-current-buffer (marker-buffer info)
         (list (car record)
               (or (buffer-name) "")
-              (buffer-file-name)
-              major-mode
               (line-number-at-pos pos 'absolute)
-              pos
+              (file-name-nondirectory (directory-file-name
+                                       (or (binky--project-root) default-directory)))
+              major-mode
               (save-excursion
                 (goto-char info)
-                (buffer-substring (line-beginning-position) (line-end-position)))))
+                (buffer-substring (line-beginning-position) (line-end-position)))
+              (buffer-file-name)
+              pos))
     record))
 
 (defun binky--prop-get (record prop)
   "Return the property PROP of RECORD, or nil if none."
   (let ((record (binky--normalize record)))
     (cl-case prop
-      (mark (nth 0 record))
-      (name (nth 1 record))
-      (file (nth 2 record))
-      (mode (nth 3 record))
-      (line (nth 4 record))
-      (position (nth 5 record))
-      (context (nth 6 record)))))
+      (mark     (nth 0 record))
+      (bufname  (nth 1 record))
+      (line     (nth 2 record))
+      (project  (nth 3 record))
+      (mode     (nth 4 record))
+      (context  (nth 5 record))
+      (filename (nth 6 record))
+      (pos      (nth 7 record)))))
 
 (defun binky--aggregate (style)
   "Return aggregated records according to STYLE."
@@ -528,8 +579,8 @@ record."
     (dolist (record binky-manual-alist)
       (when-let* ((info (cdr record))
                   ((not (markerp info)))
-                  ((equal (cadr info) buffer-file-name)))
-        (setcdr record (set-marker (make-marker) (car (last info))))))
+                  ((equal (binky--prop-get record 'filename) buffer-file-name)))
+        (setcdr record (set-marker (make-marker) (binky--prop-get record 'pos)))))
     (unless (equal orig binky-manual-alist)
       (run-hooks 'binky-manual-alist-update-hook))))
 
@@ -539,17 +590,17 @@ NAME is buffer or file name, if nil current buffer name is used.
 ORDER is `<' or `>' to sort records by position, otherwise no sorting."
   (let ((filtered (seq-filter (lambda (x)
                                 (equal (or name (buffer-name (current-buffer)))
-                                       (binky--prop-get x 'name)))
+                                       (binky--prop-get x 'bufname)))
                               binky-manual-alist)))
     (if (memq order '(< >))
-        (seq-sort-by (lambda (x) (binky--prop-get x 'position)) order filtered)
+        (seq-sort-by (lambda (x) (binky--prop-get x 'pos)) order filtered)
       filtered)))
 
 (defun binky--manual-alist-preview ()
   "Return manual alist for preview."
   (if binky-preview-in-groups
       (let (live killed same)
-        (dolist (name (seq-uniq (mapcar (lambda (x) (binky--prop-get x 'name))
+        (dolist (name (seq-uniq (mapcar (lambda (x) (binky--prop-get x 'bufname))
                                         binky-manual-alist)))
           (let ((group (binky--manual-alist-in-group name #'<)))
             (if (equal name (buffer-name binky-current-buffer))
@@ -612,9 +663,10 @@ ORDER is `<' or `>' to sort records by position, otherwise no sorting."
                                (t nil))))
                (cons x (if (or killed (facep column-face))
                            (propertize y 'face (or cond-face column-face)) y))))
-           '(name line mode context)
-           (list (binky--prop-get record 'name)
+           '(name line project mode context)
+           (list (binky--prop-get record 'bufname)
 		         (number-to-string (binky--prop-get record 'line))
+                 (binky--prop-get record 'project)
 		         (string-remove-suffix "-mode"
                                        (symbol-name (binky--prop-get record 'mode)))
 		         (string-trim (binky--prop-get record 'context)))))))
@@ -736,8 +788,8 @@ The `crtl' means to view record without jumping."
     type))
 
 (defun binky--mark-get (mark)
-  "Return INFO if (MARK . INFO) found in records, or return nil."
-  (alist-get mark (binky--aggregate 'sum)))
+  "Return (MARK . INFO) if found in records, or return nil."
+  (assoc mark (binky--aggregate 'sum)))
 
 (defun binky--mark-prefix (mark)
   "Return prefix of MARK if exists.
@@ -809,7 +861,7 @@ window regardless.  Press \\[keyboard-quit] to quit."
 
 (defun binky--mark-delete (mark)
   "Delete (MARK . INFO) from `binky-manual-alist'."
-  (let ((info (binky--mark-get mark)))
+  (let ((info (cdr (binky--mark-get mark))))
     (cond
      ((not (eq (binky--mark-type mark) 'manual))
       (binky--message mark 'illegal))
@@ -826,15 +878,16 @@ window regardless.  Press \\[keyboard-quit] to quit."
 
 (defun binky--mark-jump (mark)
   "Jump to point according to (MARK . INFO) in records."
-  (if-let ((info (binky--mark-get mark))
-           (last (point-marker)))
+  (if-let* ((record (binky--mark-get mark))
+            (info (cdr record))
+            (last (point-marker)))
 	  (progn
         (if (markerp info)
             (progn
 			  (switch-to-buffer (marker-buffer info))
 			  (goto-char info))
-		  (find-file (cadr info))
-		  (goto-char (car (last info))))
+		  (find-file (binky--prop-get record 'filename))
+		  (goto-char (binky--prop-get record 'pos)))
         (binky--highlight 'jump)
         (when (and (characterp binky-mark-back)
                    (not (equal (binky--distance last (point-marker)) 0)))
@@ -844,14 +897,14 @@ window regardless.  Press \\[keyboard-quit] to quit."
 
 (defun binky--mark-view (mark)
   "View the point in other window according to MARK."
-  (if-let ((info (binky--mark-get mark)))
+  (if-let* ((record (binky--mark-get mark))
+            (info (cdr record)))
       (progn
-        (unless (markerp info) (find-file-noselect (cadr info)))
-        (let* ((info (binky--mark-get mark))
-               (buf (marker-buffer info))
-               (pop-up-windows t))
+        (unless (markerp info)
+          (find-file-noselect (binky--prop-get record 'filename)))
+        (let ((pop-up-windows t))
           (save-selected-window
-            (pop-to-buffer buf t 'norecord)
+            (pop-to-buffer (marker-buffer info) t 'norecord)
             (goto-char info)
             (binky--highlight 'view))))
     (binky--message mark 'non-exist)))
@@ -937,7 +990,7 @@ If BACKWARD is non-nil, jump to previous one."
           (message "Point is on the only record in current buffer.")
         (binky--mark-jump
          (car (seq-find (lambda (x)
-                          (funcall order (point) (binky--prop-get x 'position)))
+                          (funcall order (point) (binky--prop-get x 'pos)))
                         sorted
                         (car sorted)))))
     (message "No records in current buffer.")))
