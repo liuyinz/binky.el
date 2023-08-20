@@ -58,7 +58,6 @@
 (define-obsolete-face-alias 'binky-preview-column-line 'binky-preview-line "1.2.0")
 (define-obsolete-face-alias 'binky-preview-column-mode 'binky-preview-mode "1.2.0")
 
-
 (defgroup binky nil
   "Jump between points like a rabbit."
   :prefix "binky-"
@@ -331,8 +330,8 @@ If nil, disable the highlight feature."
 
 (defvar binky-manual-alist nil
   "List of records (MARK . INFO) set and updated by manual.
-MARK is a lowercase letter between a-z.  INFO is a marker or a list of form
- (filename line mode context position) use to stores point information.")
+MARK is a lowercase letter between a-z.  INFO is a marker or a form like
+ (bufname line project mode context filepath pos) to store record information.")
 
 (defvar binky-recent-alist nil
   "List of records (MARK . MARKER), set and updated by recent buffers.")
@@ -467,43 +466,64 @@ Return nil if no project was found."
 When the line MARKER at has no larger distance with DISTANCE, return that
 record."
   (seq-find (lambda (x)
-              (and (markerp (cdr x))
-                   (ignore-errors
-                     (<= (binky--distance marker (cdr x))
-                         (or distance binky-distance)))))
+              (when-let ((info (binky--prop-get x 'marker)))
+                (ignore-errors
+                  (<= (binky--distance marker info)
+                      (or distance binky-distance)))))
             binky-manual-alist))
 
-(defun binky--normalize (record)
-  "Return RECORD in format (mark bufname line project mode context filename pos)."
-  (if-let* ((info (cdr record))
-            ((markerp info))
-            (pos (marker-position info)))
-      (with-current-buffer (marker-buffer info)
+(defun binky--parse (record)
+  "Parse RECORD and return information.
+The info format is (mark marker bufname line project mode context filepath pos)."
+  (if-let* ((marker (and (markerp (cdr record)) (cdr record)))
+            (pos (marker-position marker))
+            (buffer (marker-buffer marker)))
+      (with-current-buffer buffer
         (list (car record)
-              (or (buffer-name) "")
+              marker
+              buffer
+              (buffer-name)
               (line-number-at-pos pos 'absolute)
               (file-name-nondirectory (directory-file-name
                                        (or (binky--project-root) default-directory)))
-              major-mode
+              (symbol-name major-mode)
               (save-excursion
-                (goto-char info)
+                (goto-char marker)
                 (buffer-substring (line-beginning-position) (line-end-position)))
               (buffer-file-name)
               pos))
     record))
 
 (defun binky--prop-get (record prop)
-  "Return the property PROP of RECORD, or nil if none."
-  (let ((record (binky--normalize record)))
+  "Return the PROP of RECORD, or nil if none."
+  (let ((record (binky--parse record)))
     (cl-case prop
       (mark     (nth 0 record))
-      (bufname  (nth 1 record))
-      (line     (nth 2 record))
-      (project  (nth 3 record))
-      (mode     (nth 4 record))
-      (context  (nth 5 record))
-      (filename (nth 6 record))
-      (pos      (nth 7 record)))))
+      (marker   (nth 1 record))
+      (buffer   (nth 2 record))
+      (bufname  (nth 3 record))
+      (line     (nth 4 record))
+      (project  (nth 5 record))
+      (mode     (nth 6 record))
+      (context  (nth 7 record))
+      (filepath (nth 8 record))
+      (pos      (nth 9 record)))))
+
+(defun binky--filter (prop pred &optional alist)
+  "Return records in ALIST filtered by PROP for which PRED return non-nil.
+ALIST must be a binky records list, if nil use `binky-manual-alist' by default.
+PRED should be a Lisp objects to be compared or a function of one argument."
+  (let* ((alist (or alist binky-manual-alist)))
+    (seq-filter (lambda (x)
+                  (funcall (if (functionp pred)
+                               pred
+                             (lambda (y)
+                               (funcall (if (memq prop '(marker buffer))
+                                            #'eq
+                                          #'equal)
+                                        y pred)))
+                           (binky--prop-get x prop)))
+                alist)))
 
 (defun binky--aggregate (style)
   "Return aggregated records according to STYLE."
@@ -516,10 +536,9 @@ record."
      (indicator
       ;; orderless, uniq
       (cons binky-back-record
-            (seq-remove (lambda (x)
-                          (or (not (markerp (cdr x)))
-                              (eq (cdr x) (cdr binky-back-record))))
-                        (append binky-manual-alist binky-recent-alist))))
+            (binky--filter 'marker (lambda (x)
+                                     (and x (not (eq x (cdr binky-back-record)))))
+                           (append binky-manual-alist binky-recent-alist))))
      (preview
       ;; order, uniq
       (seq-reduce #'append
@@ -527,7 +546,7 @@ record."
                    (lambda (x)
                      (alist-get x `((back   . ,(list binky-back-record))
                                     (recent . ,binky-recent-alist)
-                                    (manual . ,(binky--manual-alist-preview)))))
+                                    (manual . ,(binky--manual-preview)))))
                    binky-preview-order) nil)))))
 
 (defun binky--auto-update ()
@@ -562,50 +581,41 @@ record."
 (defun binky--swap-out ()
   "Turn record from marker into list of properties when a buffer is killed."
   (let ((orig (copy-alist binky-manual-alist)))
-    (dolist (record binky-manual-alist)
-      (when-let* ((info (cdr record))
-                  ((markerp info))
-                  ((eq (marker-buffer info) (current-buffer))))
-        (if (and (buffer-file-name)
-                 (null binky-prune))
-	        (setcdr record (cdr (binky--normalize record)))
-          (delete record binky-manual-alist))))
+    (dolist (record (binky--filter 'buffer (current-buffer)))
+      (if (and (buffer-file-name)
+               (null binky-prune))
+	      (setcdr record (append '(nil nil) (seq-subseq (binky--parse record) 3)))
+        (delete record binky-manual-alist)))
     (unless (equal orig binky-manual-alist)
       (run-hooks 'binky-manual-alist-update-hook))))
 
 (defun binky--swap-in ()
   "Turn record from list of infos into marker when a buffer is reopened."
   (let ((orig (copy-alist binky-manual-alist)))
-    (dolist (record binky-manual-alist)
-      (when-let* ((info (cdr record))
-                  ((not (markerp info)))
-                  ((equal (binky--prop-get record 'filename) buffer-file-name)))
-        (setcdr record (set-marker (make-marker) (binky--prop-get record 'pos)))))
+    (dolist (record (binky--filter 'filepath (buffer-file-name)))
+      (setcdr record (set-marker (make-marker) (binky--prop-get record 'pos))))
     (unless (equal orig binky-manual-alist)
       (run-hooks 'binky-manual-alist-update-hook))))
 
-(defun binky--manual-alist-in-group (&optional name order)
-  "Return alist of manual records which is in same buffer or file.
-NAME is buffer or file name, if nil current buffer name is used.
+(defun binky--manual-group (&optional bufname order)
+  "Return alist of manual records in same buffer or file.
+BUFNAME is a buffer name, if nil current buffer name is used.
 ORDER is `<' or `>' to sort records by position, otherwise no sorting."
-  (let ((filtered (seq-filter (lambda (x)
-                                (equal (or name (buffer-name (current-buffer)))
-                                       (binky--prop-get x 'bufname)))
-                              binky-manual-alist)))
+  (let ((filtered (binky--filter 'bufname (or bufname (buffer-name)))))
     (if (memq order '(< >))
         (seq-sort-by (lambda (x) (binky--prop-get x 'pos)) order filtered)
       filtered)))
 
-(defun binky--manual-alist-preview ()
+(defun binky--manual-preview ()
   "Return manual alist for preview."
   (if binky-preview-in-groups
       (let (live killed same)
-        (dolist (name (seq-uniq (mapcar (lambda (x) (binky--prop-get x 'bufname))
-                                        binky-manual-alist)))
-          (let ((group (binky--manual-alist-in-group name #'<)))
-            (if (equal name (buffer-name binky-current-buffer))
+        (dolist (bufname (seq-uniq (mapcar (lambda (x) (binky--prop-get x 'bufname))
+                                           binky-manual-alist)))
+          (let ((group (binky--manual-group bufname #'<)))
+            (if (equal bufname (buffer-name binky-current-buffer))
                 (setq same group)
-              (if (get-buffer name)
+              (if (get-buffer bufname)
                   (setq live (append live group))
                 (setq killed (append killed group))))))
         (append same live killed))
@@ -647,7 +657,7 @@ ORDER is `<' or `>' to sort records by position, otherwise no sorting."
 
 (defun binky--preview-propertize (record)
   "Return formatted string for RECORD in preview."
-  (let ((killed (not (markerp (cdr record)))))
+  (let ((killed (not (binky--prop-get record 'marker))))
     (cons (cons 'mark (concat "  " (binky--mark-propertize
                                     (binky--prop-get record 'mark)
                                     nil killed)))
@@ -667,8 +677,7 @@ ORDER is `<' or `>' to sort records by position, otherwise no sorting."
            (list (binky--prop-get record 'bufname)
 		         (number-to-string (binky--prop-get record 'line))
                  (binky--prop-get record 'project)
-		         (string-remove-suffix "-mode"
-                                       (symbol-name (binky--prop-get record 'mode)))
+		         (string-remove-suffix "-mode" (binky--prop-get record 'mode))
 		         (string-trim (binky--prop-get record 'context)))))))
 
 (defun binky--preview-header ()
@@ -856,38 +865,32 @@ window regardless.  Press \\[keyboard-quit] to quit."
     (binky--highlight 'add)
     (setf (alist-get mark binky-manual-alist) (point-marker))
     (run-hooks 'binky-manual-alist-update-hook)
-    (and binky-overwrite
-         (binky--message mark 'overwrite)))))
+    (and binky-overwrite (binky--message mark 'overwrite)))))
 
 (defun binky--mark-delete (mark)
   "Delete (MARK . INFO) from `binky-manual-alist'."
-  (let ((info (cdr (binky--mark-get mark))))
-    (cond
-     ((not (eq (binky--mark-type mark) 'manual))
-      (binky--message mark 'illegal))
-     ((null info)
-      (binky--message mark 'non-exist))
-     (t
-      (when (markerp info)
-        (save-excursion
-          (with-current-buffer (marker-buffer info)
-            (goto-char info)
-            (binky--highlight 'delete))))
-	  (setq binky-manual-alist (assoc-delete-all mark binky-manual-alist))
-      (run-hooks 'binky-manual-alist-update-hook)))))
+  (unless (eq (binky--mark-type mark) 'manual)
+    (binky--message mark 'illegal))
+  (if-let ((record (binky--mark-get mark)))
+      (progn
+        (when (binky--prop-get record 'marker)
+          (save-excursion
+            (with-current-buffer (binky--prop-get record 'bufname)
+              (goto-char (binky--prop-get record 'pos))
+              (binky--highlight 'delete))))
+	    (setq binky-manual-alist (delq record binky-manual-alist))
+        (run-hooks 'binky-manual-alist-update-hook))
+    (binky--message mark 'non-exist)))
 
 (defun binky--mark-jump (mark)
   "Jump to point according to (MARK . INFO) in records."
-  (if-let* ((record (binky--mark-get mark))
-            (info (cdr record))
-            (last (point-marker)))
-	  (progn
-        (if (markerp info)
-            (progn
-			  (switch-to-buffer (marker-buffer info))
-			  (goto-char info))
-		  (find-file (binky--prop-get record 'filename))
-		  (goto-char (binky--prop-get record 'pos)))
+  (if-let ((record (binky--mark-get mark))
+           (last (point-marker)))
+      (progn
+        (if (binky--prop-get record 'marker)
+            (switch-to-buffer (binky--prop-get record 'bufname))
+          (find-file (binky--prop-get record 'filepath)))
+        (goto-char (binky--prop-get record 'pos))
         (binky--highlight 'jump)
         (when (and (characterp binky-mark-back)
                    (not (equal (binky--distance last (point-marker)) 0)))
@@ -897,15 +900,14 @@ window regardless.  Press \\[keyboard-quit] to quit."
 
 (defun binky--mark-view (mark)
   "View the point in other window according to MARK."
-  (if-let* ((record (binky--mark-get mark))
-            (info (cdr record)))
+  (if-let* ((record (binky--mark-get mark)))
       (progn
-        (unless (markerp info)
-          (find-file-noselect (binky--prop-get record 'filename)))
+        (unless (binky--prop-get record 'marker)
+          (find-file-noselect (binky--prop-get record 'filepath)))
         (let ((pop-up-windows t))
           (save-selected-window
-            (pop-to-buffer (marker-buffer info) t 'norecord)
-            (goto-char info)
+            (pop-to-buffer (binky--prop-get record 'bufname) t 'norecord)
+            (goto-char (binky--prop-get record 'pos))
             (binky--highlight 'view))))
     (binky--message mark 'non-exist)))
 
@@ -984,7 +986,7 @@ until \\[keyboard-quit] pressed."
 If BACKWARD is non-nil, jump to previous one."
   (interactive)
   (if-let* ((order (if backward #'> #'<))
-            (sorted (binky--manual-alist-in-group nil order)))
+            (sorted (binky--manual-group nil order)))
       (if (and (equal (length sorted) 1)
                (equal (binky--distance (point-marker) (cdar sorted)) 0))
           (message "Point is on the only record in current buffer.")

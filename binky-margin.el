@@ -47,20 +47,21 @@ If nil, mark character would be used instead.  Recommendation as follow:
                 ,(binky--mark-propertize mark binky-margin-string))))
 
 (defun binky-margin--local-update (&optional update)
-  "Remove and update margin indicators in current buffer if UPDATE is non-nil."
+  "Remove margin indicators in current buffer and update if UPDATE is non-nil."
   ;; delete all overlay in buffer
   (save-restriction
     (widen)
     (dolist (ov (overlays-in (point-min) (point-max)))
       (when (overlay-get ov 'binky) (delete-overlay ov))))
   (when update
-    (dolist (record (binky--aggregate 'indicator))
-      (when-let* ((marker (cdr record))
-                  (pos (marker-position marker))
-                  ((eq (marker-buffer marker) (current-buffer)))
-                  (ov (make-overlay pos pos)))
+    (dolist (record (binky--filter 'buffer
+                                   (current-buffer)
+                                   (binky--aggregate 'indicator)))
+      (let* ((pos (binky--prop-get record 'pos))
+             (ov (make-overlay pos pos)))
         (overlay-put ov 'binky t)
-        (overlay-put ov 'before-string (binky-margin--spec (car record)))))))
+        (overlay-put ov 'before-string
+                     (binky-margin--spec (binky--prop-get record 'mark)))))))
 
 (defun binky-margin--update ()
   "Remove and update margin indicators in all buffers if needed."
