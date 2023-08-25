@@ -57,11 +57,11 @@ If nil, mark character would be used instead.  Recommendation as follow:
     (dolist (record (binky--filter 'buffer
                                    (current-buffer)
                                    (binky--aggregate 'indicator)))
-      (let* ((pos (binky--prop-get record 'pos))
+      (let* ((pos (binky--prop record 'pos))
              (ov (make-overlay pos pos)))
         (overlay-put ov 'binky t)
         (overlay-put ov 'before-string
-                     (binky-margin--spec (binky--prop-get record 'mark)))))))
+                     (binky-margin--spec (binky--prop record 'mark)))))))
 
 (defun binky-margin--update ()
   "Remove and update margin indicators in all buffers if needed."
