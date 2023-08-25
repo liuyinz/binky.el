@@ -351,8 +351,8 @@ MARK is a lowercase letter between a-z.  INFO is a marker or a form like
 (defvar binky-preview-buffer "*binky-preview*"
   "Buffer used to preview records.")
 
-(defvar binky-debug-buffer "*binky-debug-log*"
-  "Buffer used to debug.")
+(defvar binky-log-buffer "*binky-log*"
+  "Name of the binky log buffer.")
 
 (defvar binky-manual-alist-update-hook nil
   "Hook run when the variable `binky-manual-alist' changes.")
@@ -384,9 +384,9 @@ MARK is a lowercase letter between a-z.  INFO is a marker or a form like
 ;;; Functions
 
 (defun binky--log (&rest args)
-  "Print log into `binky-debug-buffer' about ARGS.
+  "Print infomations into `binky-log-buffer' about ARGS.
 ARGS format is as same as `format' command."
-  (with-current-buffer (get-buffer-create binky-debug-buffer)
+  (with-current-buffer (get-buffer-create binky-log-buffer)
     (goto-char (point-max))
     (insert "\n" (apply #'format args))))
 
