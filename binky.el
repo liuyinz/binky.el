@@ -453,11 +453,9 @@ Return nil if no project was found."
 
 (defun binky--distance (x y)
   "Return line distance between marker X and Y when in same buffer."
-  (when-let* (((markerp x))
-              ((markerp y))
-              ((eq (marker-buffer x) (marker-buffer y)))
-              (buf (marker-buffer x)))
-    (with-current-buffer buf
+  (when (and (markerp x) (markerp y)
+             (eq (marker-buffer x) (marker-buffer y)))
+    (with-current-buffer (marker-buffer x)
       (abs (- (line-number-at-pos x 'absolute)
               (line-number-at-pos y 'absolute))))))
 
@@ -513,17 +511,16 @@ The info format is (mark marker bufname line project mode context filepath pos).
   "Return records in ALIST filtered by PROP for which PRED return non-nil.
 ALIST must be a binky records list, if nil use `binky-manual-alist' by default.
 PRED should be a Lisp objects to be compared or a function of one argument."
-  (let* ((alist (or alist binky-manual-alist)))
-    (seq-filter (lambda (x)
-                  (funcall (if (functionp pred)
-                               pred
-                             (lambda (y)
-                               (funcall (if (memq prop '(marker buffer))
-                                            #'eq
-                                          #'equal)
-                                        y pred)))
-                           (binky--prop x prop)))
-                alist)))
+  (seq-filter (lambda (x)
+                (funcall (if (functionp pred)
+                             pred
+                           (lambda (y)
+                             (funcall (if (memq prop '(marker buffer))
+                                          #'eq
+                                        #'equal)
+                                      y pred)))
+                         (binky--prop x prop)))
+              (or alist binky-manual-alist)))
 
 (defun binky--aggregate (style)
   "Return aggregated records according to STYLE."
