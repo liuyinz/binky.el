@@ -563,7 +563,7 @@ PRED should be a Lisp objects to be compared or a function of one argument."
                        if (with-current-buffer buf
                             (and (not (seq-some #'funcall
                                                 (append binky-exclude-functions
-                                                        '(binky--exclude-mode-
+                                                        '(binky--exclude-mode-p
                                                           binky--exclude-regexp-p))))
                                  (point-marker)))
                        collect it into result
