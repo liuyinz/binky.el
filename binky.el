@@ -554,30 +554,32 @@ PRED should be a Lisp objects to be compared or a function of one argument."
     (setq binky-back-record nil)
     (run-hooks 'binky-back-record-update-hook))
   ;; update recent marked records
-  (if-let ((marks (remove binky-mark-back binky-mark-recent)))
-      (setq binky-recent-alist
-            ;; remove current-buffer and last buffer if current-buffer if minibuffer
-            (cl-loop for buf in (nthcdr (if (minibufferp (current-buffer)) 2 1)
-                                        (buffer-list))
-                     if (with-current-buffer buf
-                          (and (not (seq-some #'funcall
-                                              (append binky-exclude-functions
-                                                      '(binky--exclude-mode-p
-                                                        binky--exclude-regexp-p))))
-                               (point-marker)))
-                     collect it into result
-                     ;; delete recent marker on the same line in `binky-manual-alist'
-                     finally do (setq result (seq-remove
-                                              (lambda (m) (binky--duplicated-p m 0))
-                                              result))
-                     finally return
-                     (seq-mapn (lambda (x y) (cons x y))
-                               marks
-                               (if (equal binky-recent-sort-by 'recency)
-                                   result
-                                 (seq-sort-by #'binky--frequency-get #'> result)))))
-    (setq binky-recent-alist nil))
-  (run-hooks 'binky-recent-alist-update-hook))
+  (let ((orig (copy-alist binky-recent-alist)))
+    (if-let ((marks (remove binky-mark-back binky-mark-recent)))
+        (setq binky-recent-alist
+              ;; remove current-buffer and last buffer if current-buffer if minibuffer
+              (cl-loop for buf in (nthcdr (if (minibufferp (current-buffer)) 2 1)
+                                          (buffer-list))
+                       if (with-current-buffer buf
+                            (and (not (seq-some #'funcall
+                                                (append binky-exclude-functions
+                                                        '(binky--exclude-mode-
+                                                          binky--exclude-regexp-p))))
+                                 (point-marker)))
+                       collect it into result
+                       ;; delete recent marker on the same line in `binky-manual-alist'
+                       finally do (setq result (seq-remove
+                                                (lambda (m) (binky--duplicated-p m 0))
+                                                result))
+                       finally return
+                       (seq-mapn (lambda (x y) (cons x y))
+                                 marks
+                                 (if (equal binky-recent-sort-by 'recency)
+                                     result
+                                   (seq-sort-by #'binky--frequency-get #'> result)))))
+      (setq binky-recent-alist nil))
+    (unless (equal orig binky-recent-alist)
+      (run-hooks 'binky-recent-alist-update-hook))))
 
 (defun binky--swap-out ()
   "Turn record from marker into list of properties when a buffer is killed."
