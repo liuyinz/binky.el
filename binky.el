@@ -348,6 +348,9 @@ MARK is a lowercase letter between a-z.  INFO is a marker or a form like
 (defvar-local binky-frequency 0
   "Frequency of current buffer.")
 
+(defvar-local binky-recorded nil
+  "If non-nil, the buffer was once recorded by binky.")
+
 (defvar binky-preview-buffer "*binky-preview*"
   "Buffer used to preview records.")
 
@@ -404,6 +407,16 @@ Wait for DURATION seconds and then redisplay."
                          'binky-preview-mark-manual)
              (alist-get status message-map))
     (sit-for (or duration 0.8) t)))
+
+(defun binky--marker (&optional pos)
+  "Return a marker at point or POS and record the buffer by binky.
+Optional arg POS could be a marker or number."
+  (setq-local binky-recorded t)
+  (copy-marker (or pos (point))))
+
+(defun binky--recorded-p (buffer)
+  "Return t if BUFFER was once recorded by binky."
+  (or (buffer-local-value 'binky-recorded buffer) nil))
 
 (defun binky--project-root ()
   "Get the path to the project root.
@@ -565,7 +578,7 @@ PRED should be a Lisp objects to be compared or a function of one argument."
                                                 (append binky-exclude-functions
                                                         '(binky--exclude-mode-p
                                                           binky--exclude-regexp-p))))
-                                 (point-marker)))
+                                 (binky--marker)))
                        collect it into result
                        ;; delete recent marker on the same line in `binky-manual-alist'
                        finally do (setq result (seq-remove
@@ -596,7 +609,7 @@ PRED should be a Lisp objects to be compared or a function of one argument."
   "Turn record from list of infos into marker when a buffer is reopened."
   (let ((orig (copy-alist binky-manual-alist)))
     (dolist (record (binky--filter 'filepath (buffer-file-name)))
-      (setcdr record (set-marker (make-marker) (binky--prop record 'pos))))
+      (setcdr record (binky--marker (binky--prop record 'pos))))
     (unless (equal orig binky-manual-alist)
       (run-hooks 'binky-manual-alist-update-hook))))
 
@@ -866,7 +879,7 @@ window regardless.  Press \\[keyboard-quit] to quit."
     (binky--message mark 'exist))
    (t
     (binky--highlight 'add)
-    (setf (alist-get mark binky-manual-alist) (point-marker))
+    (setf (alist-get mark binky-manual-alist) (binky--marker))
     (run-hooks 'binky-manual-alist-update-hook)
     (and binky-overwrite (binky--message mark 'overwrite)))))
 
@@ -897,7 +910,7 @@ window regardless.  Press \\[keyboard-quit] to quit."
         (binky--highlight 'jump)
         (when (and (characterp binky-mark-back)
                    (not (equal (binky--distance last (point-marker)) 0)))
-          (setq binky-back-record (cons binky-mark-back last))
+          (setq binky-back-record (cons binky-mark-back (binky--marker last)))
           (run-hooks 'binky-back-record-update-hook)))
     (binky--message mark 'non-exist)))
 

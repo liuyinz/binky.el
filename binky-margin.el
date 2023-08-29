@@ -64,8 +64,8 @@ If nil, mark character would be used instead.  Recommendation as follow:
                      (binky-margin--spec (binky--prop record 'mark)))))))
 
 (defun binky-margin--update ()
-  "Remove and update margin indicators in all buffers if needed."
-  (dolist (buf (buffer-list))
+  "Remove and update margin indicators in all recorded buffers if needed."
+  (dolist (buf (seq-filter #'binky--recorded-p (buffer-list)))
     (with-current-buffer buf
       ;; delete overlays
       (binky-margin--local-update
