@@ -1,4 +1,25 @@
 # Changelog
+# [1.3.0](https://github.com/liuyinz/emacs.d/compare/v1.2.2...v1.3.0) (2023-08-29)
+
+
+### Bug Fixes
+
+* don not run binky-recent-alist-update-hook if no changes ([1f2ce82](https://github.com/liuyinz/emacs.d/commit/1f2ce82bd7dd8f412074b391b38592c49135d67d))
+* error when scroll mouse in binky-mark-read ([28468bd](https://github.com/liuyinz/emacs.d/commit/28468bde909f8d9a9f7b26fb5e065a9c5d83fb14))
+* wrong function name ([2948f53](https://github.com/liuyinz/emacs.d/commit/2948f5319209c5ce898d5cf3ea94d24ef64e584c))
+
+
+### Features
+
+* add project information for records ([b6838b6](https://github.com/liuyinz/emacs.d/commit/b6838b65321b270d5177d1af32ec4131c19e4dec))
+
+
+### Performance Improvements
+
+* only update margins on recorded buffers ([7b22515](https://github.com/liuyinz/emacs.d/commit/7b2251558f9eede39f328e51d914907c2bc59f5c))
+
+
+
 ## 1.2.2 (2023-08-11)
 
 
