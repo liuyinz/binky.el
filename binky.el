@@ -3,7 +3,7 @@
 ;; Copyright (C) 2022, 2023 liuyinz
 
 ;; Author: liuyinz <liuyinz95@gmail.com>
-;; Version: 1.2.3
+;; Version: 1.3.0
 ;; Package-Requires: ((emacs "26.3"))
 ;; Keywords: convenience
 ;; Homepage: https://github.com/liuyinz/binky-mode
