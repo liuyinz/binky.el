@@ -105,7 +105,7 @@ nil means to use `default-directory'.
                  (const :tag "Projectile" projectile)
                  (const :tag "Built-in Project" project)
                  (const :tag "Disable" nil))
-  :package-version '(binky . "1.2.3")
+  :package-version '(binky . "1.3.0")
   :group 'binky)
 
 (defcustom binky-distance 5
@@ -201,7 +201,7 @@ Usually, `context' column should be at the end and not truncated."
           :options '(mark name line project mode context)
 		  :value-type '(group (choice integer float (const nil))
 							  (choice integer float (const nil))))
-  :package-version '(binky . "1.2.3")
+  :package-version '(binky . "1.3.0")
   :group 'binky)
 
 (defcustom binky-preview-ellipsis ".."
@@ -293,7 +293,7 @@ If nil, disable the highlight feature."
 (defface binky-preview-project
   '((t :inherit font-lock-constant-face))
   "Face used to highlight the project directory of record in preview."
-  :package-version '(binky . "1.2.3")
+  :package-version '(binky . "1.3.0")
   :group 'binky)
 
 (defface binky-preview-killed
