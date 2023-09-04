@@ -1,10 +1,24 @@
 # Changelog
 
-## [unreleased]
+## [1.3.1](https://github.com/liuyinz/binky.el/compare/v1.3.1..v1.3.1) - 2023-09-04
+
+### Bug Fixes
+
+- **(defcustom)** wrong version numbers - ([b010d1c](https://github.com/liuyinz/binky.el/commit/b010d1c2264b8db09f7bfaeaab3e0c780d8ac9a2))
+
+### Documentation
+
+- update CHANGELOG - ([61ba795](https://github.com/liuyinz/binky.el/commit/61ba795ee06658ebfcf2adc1c081b0dd30313559))
+- update screenshot image - ([0da519c](https://github.com/liuyinz/binky.el/commit/0da519cea1590f74ef18cc429a71dc576d82fd8d))
 
 ### Miscellaneous Chores
 
-- **(changelog)** add config cliff.toml - ([c9c1916](https://github.com/liuyinz/binky.el/commit/c9c1916d73fa246b14584f7fca94b6e652c5a2dc))
+- **(LICENSE)** change LICENSE to GPL3 - ([57ea59f](https://github.com/liuyinz/binky.el/commit/57ea59f346469d5315795816cb90f8f11d6fab2f))
+- **(changelog)** add config cliff.toml - ([20b9b86](https://github.com/liuyinz/binky.el/commit/20b9b867da82bd582d6b9c85a11f76785501d57c))
+
+### Refactoring
+
+- simplify internal function binky--parse - ([3ee61df](https://github.com/liuyinz/binky.el/commit/3ee61dfbd57a83faf845a66423c0f48205154b90))
 
 ## [1.3.0](https://github.com/liuyinz/binky.el/compare/v1.2.2..v1.3.0) - 2023-08-29
 
