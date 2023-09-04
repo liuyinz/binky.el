@@ -241,93 +241,130 @@ If nil, disable the highlight feature."
   :package-version '(binky . "1.2.2")
   :group 'binky)
 
-(defface binky-preview-header
-  '((t :inherit font-lock-type-face :underline t))
-  "Face used to highlight the header in preview buffer."
-  :group 'binky)
+;; Faces
+
+(defgroup binky-faces nil
+  "The faces of `binky'."
+  :group 'binky
+  :group 'faces
+  :package-version '(binky . "1.3.2"))
+
+(defface binky-preview
+  '((t (:italic nil :underline nil :inverse-video nil)))
+  "Default face."
+  :package-version '(binky . "1.3.2")
+  :group 'binky-faces)
 
 (defface binky-preview-mark-recent
-  '((t :inherit font-lock-constant-face
-       :bold t
-       :italic nil
-       :underline nil
-       :inverse-video nil))
+  '((t (:inherit (binky-preview bold)
+        :foreground "#e27e8d")))
   "Face used to highlight the recent mark of record in preview."
-  :group 'binky)
+  :package-version '(binky . "1.3.2")
+  :group 'binky-faces)
 
 (defface binky-preview-mark-back
-  '((t :inherit font-lock-type-face
-       :bold t
-       :italic nil
-       :underline nil
-       :inverse-video nil))
+  '((t (:inherit (binky-preview bold)
+        :foreground "#ebbf83")))
   "Face used to highlight the back mark of record in preview."
-  :group 'binky)
+  :package-version '(binky . "1.3.2")
+  :group 'binky-faces)
 
 (defface binky-preview-mark-manual
-  '((t :inherit font-lock-keyword-face
-       :bold t
-       :italic nil
-       :underline nil
-       :inverse-video nil))
+  '((t (:inherit (binky-preview bold)
+        :foreground "#5ec4ff")))
   "Face used to highlight the mark of record in preview."
-  :group 'binky)
+  :package-version '(binky . "1.3.2")
+  :group 'binky-faces)
+
+(defface binky-preview-header
+  '((t (:inherit (binky-preview bold)
+        :underline t
+        :foreground "#8bd49c")))
+  "Face used to highlight the header in preview buffer."
+  :package-version '(binky . "1.3.2")
+  :group 'binky-faces)
 
 (defface binky-preview-name
-  '((t :inherit default))
+  '((t (:inherit (binky-preview default))))
   "Face used to highlight the name of record in preview."
-  :group 'binky)
+  :package-version '(binky . "1.3.2")
+  :group 'binky-faces)
 
 (defface binky-preview-name-same
-  '((t :inherit binky-preview-name :underline t))
+  '((t (:inherit binky-preview-name
+        :underline t)))
   "Face used to highlight the name of record in same buffer in preview."
-  :group 'binky)
+  :package-version '(binky . "1.3.2")
+  :group 'binky-faces)
 
 (defface binky-preview-line
-  '((t :inherit font-lock-keyword-face))
+  '((t (:inherit binky-preview-mark-manual
+        :bold nil)))
   "Face used to highlight the line number of record in preview."
-  :group 'binky)
+  :package-version '(binky . "1.3.2")
+  :group 'binky-faces)
 
 (defface binky-preview-mode
-  '((t :inherit font-lock-function-name-face))
+  '((t (:inherit binky-preview-mark-recent
+        :bold nil)))
   "Face used to highlight the major mode of record in preview."
-  :group 'binky)
+  :package-version '(binky . "1.3.2")
+  :group 'binky-faces)
 
 (defface binky-preview-project
-  '((t :inherit font-lock-constant-face))
+  '((t (:inherit binky-preview-mark-back
+        :bold nil)))
   "Face used to highlight the project directory of record in preview."
-  :package-version '(binky . "1.3.0")
-  :group 'binky)
+  :package-version '(binky . "1.3.2")
+  :group 'binky-faces)
 
 (defface binky-preview-killed
-  '((t :inherit font-lock-comment-face))
+  '((t (:inherit (binky-preview font-lock-comment-face))))
   "Face used to highlight whole record of killed buffers in preview."
-  :group 'binky)
+  :package-version '(binky . "1.3.2")
+  :group 'binky-faces)
+
+(defface binky-highlight
+  `((t (:foreground ,(face-foreground 'default)
+        :extend t)))
+  "Face used to highlight the line added to record."
+  :package-version '(binky . "1.3.2")
+  :group 'binky-faces)
 
 (defface binky-highlight-add
-  '((t :inherit diff-refine-added))
+  `((t (:inherit binky-highlight
+        :background ,(face-foreground 'binky-preview-header))))
   "Face used to highlight the line added to record."
-  :group 'binky)
+  :package-version '(binky . "1.3.2")
+  :group 'binky-faces)
 
 (defface binky-highlight-delete
-  '((t :inherit diff-refine-removed))
+  `((t (:inherit binky-highlight
+        :background ,(face-foreground 'binky-preview-mark-recent))))
   "Face used to highlight the line deleted from record."
-  :group 'binky)
+  :package-version '(binky . "1.3.2")
+  :group 'binky-faces)
 
 (defface binky-highlight-view
-  '((t :inherit diff-refine-changed :extend t))
+  `((t (:inherit binky-highlight
+        :background ,(face-foreground 'binky-preview-mark-back))))
   "Face used to highlight the line viewed."
-  :group 'binky)
+  :package-version '(binky . "1.3.2")
+  :group 'binky-faces)
 
 (defface binky-highlight-jump
-  '((t :inherit highlight :extend t))
+  `((t (:inherit binky-highlight
+        :background ,(face-foreground 'binky-preview-mark-manual))))
   "Face used to highlight the line jumped to."
-  :group 'binky)
+  :package-version '(binky . "1.3.2")
+  :group 'binky-faces)
 
 (defface binky-highlight-warn
-  '((t :inherit warning :inverse-video t :extend t))
+  `((t (:inherit binky-highlight
+        :background ,(face-foreground 'binky-preview-mark-back))))
   "Face used to highlight the line already record."
-  :group 'binky)
+  :package-version '(binky . "1.3.2")
+  :group 'binky-faces)
 
 ;;; Variables
 
