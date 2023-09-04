@@ -59,7 +59,7 @@ Clone and add to `load-path`, require the package.
 - Melpa
 
 This package is available on [MELPA].
-Install with `M-x package-install` `RET` `binky` from within Emacs.
+Install with `M-x package-install` `RET` `binky` within Emacs.
 
 ## Usage
 
