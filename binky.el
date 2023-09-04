@@ -250,6 +250,7 @@ If nil, disable the highlight feature."
   '((t :inherit font-lock-constant-face
        :bold t
        :italic nil
+       :underline nil
        :inverse-video nil))
   "Face used to highlight the recent mark of record in preview."
   :group 'binky)
@@ -258,6 +259,7 @@ If nil, disable the highlight feature."
   '((t :inherit font-lock-type-face
        :bold t
        :italic nil
+       :underline nil
        :inverse-video nil))
   "Face used to highlight the back mark of record in preview."
   :group 'binky)
@@ -266,6 +268,7 @@ If nil, disable the highlight feature."
   '((t :inherit font-lock-keyword-face
        :bold t
        :italic nil
+       :underline nil
        :inverse-video nil))
   "Face used to highlight the mark of record in preview."
   :group 'binky)
