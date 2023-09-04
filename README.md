@@ -32,7 +32,7 @@ same mechanism like `point-to-register` but with an enhanced experience.
 
 - Call `M-x binky-*` related command
 
-![binky with preview](image/binky-preview.png)
+![binky with preview](image/binky-preview.jpg)
 
 `?` for toggle preview manually, `q` or `escape` for quit, `SPC` to toggle in groups
 
