@@ -40,7 +40,7 @@ If nil, mark character would be used instead.  Recommendation as follow:
   :type '(choice string (const :tag "Use mark character" nil))
   :group 'binky-margin)
 
-(defun binky-margin--spec (&optional mark)
+(defun binky-margin--spec (mark)
   "Return margin display string according to MARK if provided."
   (propertize " " 'display
               `((margin ,(intern (format "%s-margin" binky-indicator-side)))
