@@ -808,7 +808,7 @@ The `crtl' means to view record without jumping."
                ((and (char-or-string-p mark)
                      (memq (downcase mark) (binky--mark-manual))) 'shift)
                ((equal (binky--mark-prefix mark) "C") 'ctrl)
-               ;; ((equal (binky--mark-prefix mark) "M") 'alt)
+               ((equal (binky--mark-prefix mark) "M") 'alt)
                (t 'illegal))))
     (and refresh (setq binky-current-type type))
     type))
@@ -899,11 +899,13 @@ window regardless.  Press \\[keyboard-quit] to quit."
         (run-hooks 'binky-manual-alist-update-hook))
     (binky--message mark 'non-exist)))
 
-(defun binky--mark-jump (mark)
-  "Jump to point according to (MARK . INFO) in records."
+(defun binky--mark-jump (mark &optional other)
+  "Jump to point according to (MARK . INFO) in records.
+If optional arg OTHER is non-nil, jump to other window."
   (if-let ((record (binky--mark-get mark))
            (last (point-marker)))
       (progn
+        (and other (switch-to-buffer-other-window (current-buffer)))
         (if (binky--prop record 'marker)
             (switch-to-buffer (binky--prop record 'name))
           (find-file (binky--prop record 'file)))
@@ -949,6 +951,12 @@ window regardless.  Press \\[keyboard-quit] to quit."
   (binky--mark-jump mark))
 
 ;;;###autoload
+(defun binky-jump-other-window (mark)
+  "Jump to point of record MARK in other window."
+  (interactive (list (binky--mark-read "Jump in other window:")))
+  (binky--mark-jump mark t))
+
+;;;###autoload
 (defun binky-view (mark)
   "View the point of record MARK in other window."
   (interactive (list (binky--mark-read "View:")))
@@ -960,6 +968,7 @@ window regardless.  Press \\[keyboard-quit] to quit."
 
 If MARK prefix is shift+, then call `binky-delete'.
 If MARK prefix is ctrl+, then call `binky-view'.
+If MARK prefix is alt+, then call `binky-jump-other-window'.
 If MARK prefix is nil and mark exists, then call `binky-jump'.
 If MARK prefix is nil and mark doesn't exist, then call `binky-add'.
 
@@ -975,6 +984,7 @@ until \\[keyboard-quit] pressed."
                      current-prefix-arg))
   (cl-case binky-current-type
     (shift (binky--mark-delete mark))
+    (alt (binky--mark-jump mark t))
     (ctrl (binky--mark-view mark))
     (t (if (binky--mark-get mark)
 	       (binky--mark-jump mark)

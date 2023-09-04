@@ -82,7 +82,9 @@ Install with `M-x package-install` `RET` `binky` from within Emacs.
 
 - `binky-jump` : jump to position of records
 
-- `binky-view` : view the position of records in other window
+- `binky-jump-other-window` : jump to position of records in other widnow
+
+- `binky-view` : view the position of records in other window without jumping
 
 - `binky-recent-toggle` : toggle to enable or disable recent jump feature
 
@@ -90,7 +92,8 @@ Install with `M-x package-install` `RET` `binky` from within Emacs.
 
   - press `j`, if record `j` exists, call `binky-jump`, otherwise call `binky-add`.
   - press `J`, call `binky-delete`.
-  - press `ctrl-j`, view the record `j` in other window without jumping.
+  - press `alt-j`, call `binky-jump-other-window`.
+  - press `ctrl-j`, call `binky-view`.
 
   With `C-u` prefix, keep editing until quit
 
