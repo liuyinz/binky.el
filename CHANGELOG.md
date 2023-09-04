@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.3.2](https://github.com/liuyinz/binky.el/compare/v1.3.2..v1.3.2) - 2023-09-04
+
+### Bug Fixes
+
+- **(highlight)** only highlight record in selected window - ([268988d](https://github.com/liuyinz/binky.el/commit/268988d0f96c27e52c056d0e043a23d35c584445))
+- **(margin)** margin indicator face covered by flymake-note face - ([9dcd48a](https://github.com/liuyinz/binky.el/commit/9dcd48aa14b4989ab57c53849aa6cb27a792a89c))
+- **(margin)** wrong argument in function binky-margin--spec - ([dffc8fa](https://github.com/liuyinz/binky.el/commit/dffc8fad43fd215d1366458719ba4140e33bbcd5))
+
+### Documentation
+
+- fix wrong screenshot link - ([bf5b16c](https://github.com/liuyinz/binky.el/commit/bf5b16c86fabf3b7c70e97775d0f8ad00386f65b))
+
+### Features
+
+- **(highlight)** support pulse-style highlight - ([a9133b6](https://github.com/liuyinz/binky.el/commit/a9133b6b681fb57c597aa68e364944ae0fc28daa))
+- add new command binky-jump-other-window - ([6900672](https://github.com/liuyinz/binky.el/commit/690067264b7f5c942db05f0381f75b2d2b971f56))
+
+### Refactoring
+
+- **(faces)** set new default values to binky-faces - ([2dd25e0](https://github.com/liuyinz/binky.el/commit/2dd25e019485d4c297166b43bd37761042fc0a1b))
+- **(highlight)** [**breaking**] rename vars, faces and functions related to highlight - ([cb74f22](https://github.com/liuyinz/binky.el/commit/cb74f22faefc60ec2bf741fce7e9655bcc8090f1))
+- rename internal var binky--project-root - ([c6dcaf3](https://github.com/liuyinz/binky.el/commit/c6dcaf3caec6056ce4bb17d75e267015a1d81f90))
+
 ## [1.3.1](https://github.com/liuyinz/binky.el/compare/v1.3.1..v1.3.1) - 2023-09-04
 
 ### Bug Fixes
