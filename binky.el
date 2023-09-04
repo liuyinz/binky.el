@@ -35,6 +35,7 @@
 (require 'cl-lib)
 (require 'seq)
 (require 'subr-x)
+(require 'pulse)
 
 (declare-function ffip-project-root "find-file-in-project")
 (declare-function project-root "project")
@@ -235,7 +236,14 @@ Usually, `context' column should be placed at the end and not truncated."
   :type 'boolean
   :group 'binky)
 
-(defcustom binky-hl-duration 0.3
+(defcustom binky-hl-use-pulse t
+  "If non-nil, pulse-style highlight would be applied when it's available.
+Otherwise, use blink-style instead."
+  :type 'boolean
+  :package-version '(binky . "1.3.2")
+  :group 'binky)
+
+(defcustom binky-hl-duration 0.4
   "If non-nil, used as time in seconds to highlight the line record located.
 If nil, disable the highlight feature."
   :type '(choice number (const :tag "Disable highlight" nil))
@@ -798,16 +806,22 @@ redisplay the preview.  If it's nil, toggle the preview."
   (when (and (numberp binky-hl-duration)
 		     (> binky-hl-duration 0))
     (let ((beg (line-beginning-position))
-          (end (line-beginning-position 2)))
-      (if binky-hl-overlay
+          (end (line-beginning-position 2))
+          (face (intern (concat "binky-hl-" (symbol-name cmd)))))
+      (if (overlayp binky-hl-overlay)
           (move-overlay binky-hl-overlay beg end)
 	    (setq binky-hl-overlay (make-overlay beg end)))
+      ;; only highlight line in selected window
 	  (overlay-put binky-hl-overlay 'window (selected-window))
-      (overlay-put binky-hl-overlay
-                   'face
-                   (intern (concat "binky-hl-" (symbol-name cmd)))))
-    (sit-for binky-hl-duration)
-    (delete-overlay binky-hl-overlay)))
+      (if (and binky-hl-use-pulse (pulse-available-p))
+          (let* ((pulse-flag t)
+                 (pulse-iterations 20)
+                 (pulse-delay (/ binky-hl-duration pulse-iterations)))
+            (overlay-put binky-hl-overlay 'pulse-delete t)
+            (pulse-momentary-highlight-overlay binky-hl-overlay face))
+        (overlay-put binky-hl-overlay 'face face)
+        (sit-for binky-hl-duration)
+        (delete-overlay binky-hl-overlay)))))
 
 (defun binky--mark-propertize (mark &optional replace-string killed)
   "Return propertized string of MARK character.
