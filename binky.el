@@ -754,7 +754,8 @@ redisplay the preview.  If it's nil, toggle the preview."
       (if binky--highlight-overlay
           (move-overlay binky--highlight-overlay beg end)
 	    (setq binky--highlight-overlay (make-overlay beg end)))
-	  (overlay-put binky--highlight-overlay
+	  (overlay-put binky--highlight-overlay 'window (selected-window))
+      (overlay-put binky--highlight-overlay
                    'face
                    (intern (concat "binky-highlight-" (symbol-name cmd)))))
     (sit-for binky-highlight-duration)
