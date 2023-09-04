@@ -438,7 +438,7 @@ record properties.")
 (defvar binky-mark-manual nil
   "List of legal marks used in manual records.")
 
-(defvar-local binky--project-root nil
+(defvar-local binky-project-root nil
   "Project path of current buffer located.")
 
 ;;; Functions
@@ -475,11 +475,11 @@ Optional arg POSITION could be a marker or number."
   "Return t if BUFFER was once recorded by binky."
   (or (buffer-local-value 'binky-recorded buffer) nil))
 
-(defun binky--project-root ()
+(defun binky-project-root ()
   "Get the path to the project root.
 Return nil if no project was found."
-  (or binky--project-root
-      (setq binky--project-root
+  (or binky-project-root
+      (setq binky-project-root
             (cond
              ((and (memq binky-project-detection '(auto ffip))
                    (fboundp 'ffip-project-root))
@@ -553,7 +553,7 @@ The format is (mark marker name line project mode context file position)."
               (buffer-name)
               (line-number-at-pos position 'absolute)
               (file-name-nondirectory (directory-file-name
-                                       (or (binky--project-root) default-directory)))
+                                       (or (binky-project-root) default-directory)))
               (symbol-name major-mode)
               (save-excursion
                 (goto-char marker)
