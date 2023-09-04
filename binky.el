@@ -177,25 +177,25 @@ If nil, disable preview, unless \\[help] is pressed."
     (project 0.14  nil)
     (mode    0.10  nil)
     (context 0     nil))
-  "List of elements (COLUMN VERTICAL HORIZONTAL) to display preview.
-COLUMN is one of five parameters of record, listed in `binky-manual-alist'
-and `binky-recent-alist'.
+  "List of elements (COLUMN VERTICAL HORIZONTAL) to display in preview.
+COLUMN is one of five properties of record below:
 
 The `mark' is column to show mark.
-The `name' is column to show buffer or file name.
+The `name' is column to show buffer name.
 The `line' is column to show line number.
 The `mode' is column to show major mode.
-The `project' is column to show project directory.
-The `context' is column to show line content.
+The `project' is column to show belonging project.
+The `context' is column to show content of line which record located.
 
 VERTICAL and HORIZONTAL are width of the COLUMN depended on
 `binky-preview-side'.  VERTICAL used for `top' and `bottom',
 HORIZONTAL used for `left' and `right'.
 If it's is nil, then COLUMN would not be displayed.
 If it's 0, the COLUMN would not be truncated.
-If it's float number between 0 and 1 rather than integer, then width is
-relative based on current frame width.
-Usually, `context' column should be at the end and not truncated."
+If it's a integer, the COLUMN width would be truncated to the upper limit.
+If it's float number between 0 and 1, then upper limit is calculated based on
+current frame width.
+Usually, `context' column should be placed at the end and not truncated."
   :type '(alist
           :key-type symbol
           :options '(mark name line project mode context)
@@ -210,7 +210,7 @@ Usually, `context' column should be at the end and not truncated."
   :group 'binky)
 
 (defcustom binky-preview-order '(back manual recent)
-  "If non-nil, showing `binky-mark-recent' first in preview."
+  "Order which is applied to preview records."
   :type '(repeat (choice (const back)
                          (const manual)
                          (const recent)))
@@ -229,13 +229,13 @@ Usually, `context' column should be at the end and not truncated."
   :group 'binky)
 
 (defcustom binky-highlight-duration 0.3
-  "If non-nil, time in seconds to highlight the line operated on.
+  "If non-nil, used as time in seconds to highlight the line record located.
 If nil, disable the highlight feature."
   :type '(choice number (const :tag "Disable highlight" nil))
   :group 'binky)
 
 (defcustom binky-indicator-side 'left
-  "Which side to show indicator on margin or fringe."
+  "Which side to show indicator in window."
   :type '(choice (const left)
                  (const right))
   :package-version '(binky . "1.2.2")
@@ -311,14 +311,14 @@ If nil, disable the highlight feature."
   "Face used to highlight the line deleted from record."
   :group 'binky)
 
-(defface binky-highlight-jump
-  '((t :inherit highlight :extend t))
-  "Face used to highlight the line jumped to."
-  :group 'binky)
-
 (defface binky-highlight-view
   '((t :inherit diff-refine-changed :extend t))
   "Face used to highlight the line viewed."
+  :group 'binky)
+
+(defface binky-highlight-jump
+  '((t :inherit highlight :extend t))
+  "Face used to highlight the line jumped to."
   :group 'binky)
 
 (defface binky-highlight-warn
@@ -330,8 +330,9 @@ If nil, disable the highlight feature."
 
 (defvar binky-manual-alist nil
   "List of records (MARK . INFO) set and updated by manual.
-MARK is a lowercase letter between a-z.  INFO is a marker or a form like
- (bufname line project mode context filepath pos) to store record information.")
+MARK is a lowercase letter between a-z.  INFO is a marker or a form in style of
+\(marker buffer name line project mode context file position) to store
+record properties.")
 
 (defvar binky-recent-alist nil
   "List of records (MARK . MARKER), set and updated by recent buffers.")
@@ -408,11 +409,11 @@ Wait for DURATION seconds and then redisplay."
              (alist-get status message-map))
     (sit-for (or duration 0.8) t)))
 
-(defun binky--marker (&optional pos)
-  "Return a marker at point or POS and record the buffer by binky.
-Optional arg POS could be a marker or number."
+(defun binky--marker (&optional position)
+  "Return a marker at point or POSITION and record the buffer by binky.
+Optional arg POSITION could be a marker or number."
   (setq-local binky-recorded t)
-  (copy-marker (or pos (point))))
+  (copy-marker (or position (point))))
 
 (defun binky--recorded-p (buffer)
   "Return t if BUFFER was once recorded by binky."
@@ -484,17 +485,17 @@ record."
             binky-manual-alist))
 
 (defun binky--parse (record)
-  "Parse RECORD and return information.
-The info format is (mark marker bufname line project mode context filepath pos)."
+  "Parse RECORD and return list of properties.
+The format is (mark marker name line project mode context file position)."
   (if-let* ((marker (and (markerp (cdr record)) (cdr record)))
-            (pos (marker-position marker))
+            (position (marker-position marker))
             (buffer (marker-buffer marker)))
       (with-current-buffer buffer
         (list (car record)
               marker
               buffer
               (buffer-name)
-              (line-number-at-pos pos 'absolute)
+              (line-number-at-pos position 'absolute)
               (file-name-nondirectory (directory-file-name
                                        (or (binky--project-root) default-directory)))
               (symbol-name major-mode)
@@ -502,7 +503,7 @@ The info format is (mark marker bufname line project mode context filepath pos).
                 (goto-char marker)
                 (buffer-substring (line-beginning-position) (line-end-position)))
               (buffer-file-name)
-              pos))
+              position))
     record))
 
 (defun binky--prop (record prop)
@@ -512,13 +513,13 @@ The info format is (mark marker bufname line project mode context filepath pos).
       (mark     (nth 0 record))
       (marker   (nth 1 record))
       (buffer   (nth 2 record))
-      (bufname  (nth 3 record))
+      (name     (nth 3 record))
       (line     (nth 4 record))
       (project  (nth 5 record))
       (mode     (nth 6 record))
       (context  (nth 7 record))
-      (filepath (nth 8 record))
-      (pos      (nth 9 record)))))
+      (file     (nth 8 record))
+      (position (nth 9 record)))))
 
 (defun binky--filter (prop pred &optional alist)
   "Return records in ALIST filtered by PROP for which PRED return non-nil.
@@ -608,29 +609,29 @@ PRED should be a Lisp objects to be compared or a function of one argument."
 (defun binky--swap-in ()
   "Turn record from list of infos into marker when a buffer is reopened."
   (let ((orig (copy-alist binky-manual-alist)))
-    (dolist (record (binky--filter 'filepath (buffer-file-name)))
-      (setcdr record (binky--marker (binky--prop record 'pos))))
+    (dolist (record (binky--filter 'file (buffer-file-name)))
+      (setcdr record (binky--marker (binky--prop record 'position))))
     (unless (equal orig binky-manual-alist)
       (run-hooks 'binky-manual-alist-update-hook))))
 
-(defun binky--manual-group (&optional bufname order)
+(defun binky--manual-group (&optional name order)
   "Return alist of manual records in same buffer or file.
-BUFNAME is a buffer name, if nil current buffer name is used.
+NAME is a buffer name, if nil current buffer name is used.
 ORDER is `<' or `>' to sort records by position, otherwise no sorting."
-  (let ((filtered (binky--filter 'bufname (or bufname (buffer-name)))))
+  (let ((filtered (binky--filter 'name (or name (buffer-name)))))
     (if (memq order '(< >))
-        (seq-sort-by (lambda (x) (binky--prop x 'pos)) order filtered)
+        (seq-sort-by (lambda (x) (binky--prop x 'position)) order filtered)
       filtered)))
 
 (defun binky--manual-preview ()
   "Return manual alist for preview."
   (if binky-preview-in-groups
-      (cl-loop for bufname in (seq-uniq (mapcar (lambda (x) (binky--prop x 'bufname))
-                                                binky-manual-alist))
-               for group = (binky--manual-group bufname #'<)
-               if (not (get-buffer bufname))
+      (cl-loop for name in (seq-uniq (mapcar (lambda (x) (binky--prop x 'name))
+                                             binky-manual-alist))
+               for group = (binky--manual-group name #'<)
+               if (not (get-buffer name))
                append group into killed
-               else if (equal bufname (buffer-name binky-current-buffer))
+               else if (equal name (buffer-name binky-current-buffer))
                append group into same
                else append group into live
                finally return (append same live killed))
@@ -689,7 +690,7 @@ ORDER is `<' or `>' to sort records by position, otherwise no sorting."
                (cons x (if (or killed (facep column-face))
                            (propertize y 'face (or cond-face column-face)) y))))
            '(name line project mode context)
-           (list (binky--prop record 'bufname)
+           (list (binky--prop record 'name)
 		         (number-to-string (binky--prop record 'line))
                  (binky--prop record 'project)
 		         (string-remove-suffix "-mode" (binky--prop record 'mode))
@@ -745,7 +746,7 @@ redisplay the preview.  If it's nil, toggle the preview."
       (setq-local buffer-read-only t))))
 
 (defun binky--highlight (cmd)
-  "Highlight the line CMD operated on in `binky-highlight-duration' seconds."
+  "Highlight the line where CMD be called."
   (when (and (numberp binky-highlight-duration)
 		     (> binky-highlight-duration 0))
     (let ((beg (line-beginning-position))
@@ -891,8 +892,8 @@ window regardless.  Press \\[keyboard-quit] to quit."
       (progn
         (when (binky--prop record 'marker)
           (save-excursion
-            (with-current-buffer (binky--prop record 'bufname)
-              (goto-char (binky--prop record 'pos))
+            (with-current-buffer (binky--prop record 'name)
+              (goto-char (binky--prop record 'position))
               (binky--highlight 'delete))))
 	    (setq binky-manual-alist (delq record binky-manual-alist))
         (run-hooks 'binky-manual-alist-update-hook))
@@ -904,9 +905,9 @@ window regardless.  Press \\[keyboard-quit] to quit."
            (last (point-marker)))
       (progn
         (if (binky--prop record 'marker)
-            (switch-to-buffer (binky--prop record 'bufname))
-          (find-file (binky--prop record 'filepath)))
-        (goto-char (binky--prop record 'pos))
+            (switch-to-buffer (binky--prop record 'name))
+          (find-file (binky--prop record 'file)))
+        (goto-char (binky--prop record 'position))
         (binky--highlight 'jump)
         (when (and (characterp binky-mark-back)
                    (not (equal (binky--distance last (point-marker)) 0)))
@@ -919,11 +920,11 @@ window regardless.  Press \\[keyboard-quit] to quit."
   (if-let* ((record (binky--mark-get mark)))
       (progn
         (unless (binky--prop record 'marker)
-          (find-file-noselect (binky--prop record 'filepath)))
+          (find-file-noselect (binky--prop record 'file)))
         (let ((pop-up-windows t))
           (save-selected-window
-            (pop-to-buffer (binky--prop record 'bufname) t 'norecord)
-            (goto-char (binky--prop record 'pos))
+            (pop-to-buffer (binky--prop record 'name) t 'norecord)
+            (goto-char (binky--prop record 'position))
             (binky--highlight 'view))))
     (binky--message mark 'non-exist)))
 
@@ -1008,7 +1009,7 @@ If BACKWARD is non-nil, jump to previous one."
           (message "Point is on the only record in current buffer.")
         (binky--mark-jump
          (car (seq-find (lambda (x)
-                          (funcall order (point) (binky--prop x 'pos)))
+                          (funcall order (point) (binky--prop x 'position)))
                         sorted
                         (car sorted)))))
     (message "No records in current buffer.")))
