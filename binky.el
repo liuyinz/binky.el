@@ -49,6 +49,7 @@
 (define-obsolete-variable-alias 'binky-mark-overwrite 'binky-overwrite "1.2.2")
 (define-obsolete-variable-alias 'binky-preview-auto-first 'binky-preview-order "1.2.0")
 (define-obsolete-variable-alias 'binky-margin-side 'binky-indicator-side "1.2.2")
+(define-obsolete-variable-alias 'binky-highlight-duration 'binky-hl-duration "1.3.2")
 
 (define-obsolete-face-alias 'binky-preview-column-mark-auto 'binky-preview-mark-recent "1.2.0")
 (define-obsolete-face-alias 'binky-preview-column-mark-back 'binky-preview-mark-back "1.2.0")
@@ -57,6 +58,12 @@
 (define-obsolete-face-alias 'binky-preview-column-name-same 'binky-preview-name-same "1.2.0")
 (define-obsolete-face-alias 'binky-preview-column-line 'binky-preview-line "1.2.0")
 (define-obsolete-face-alias 'binky-preview-column-mode 'binky-preview-mode "1.2.0")
+(define-obsolete-face-alias 'binky-highlight 'binky-hl "1.3.2")
+(define-obsolete-face-alias 'binky-highlight-add 'binky-hl-add "1.3.2")
+(define-obsolete-face-alias 'binky-highlight-delete 'binky-hl-delete "1.3.2")
+(define-obsolete-face-alias 'binky-highlight-view 'binky-hl-view "1.3.2")
+(define-obsolete-face-alias 'binky-highlight-jump 'binky-hl-jump "1.3.2")
+(define-obsolete-face-alias 'binky-highlight-warn 'binky-hl-warn "1.3.2")
 
 (defgroup binky nil
   "Jump between points like a rabbit."
@@ -228,10 +235,11 @@ Usually, `context' column should be placed at the end and not truncated."
   :type 'boolean
   :group 'binky)
 
-(defcustom binky-highlight-duration 0.3
+(defcustom binky-hl-duration 0.3
   "If non-nil, used as time in seconds to highlight the line record located.
 If nil, disable the highlight feature."
   :type '(choice number (const :tag "Disable highlight" nil))
+  :package-version '(binky . "1.3.2")
   :group 'binky)
 
 (defcustom binky-indicator-side 'left
@@ -324,43 +332,43 @@ If nil, disable the highlight feature."
   :package-version '(binky . "1.3.2")
   :group 'binky-faces)
 
-(defface binky-highlight
+(defface binky-hl
   `((t (:foreground ,(face-foreground 'default)
         :extend t)))
   "Face used to highlight the line added to record."
   :package-version '(binky . "1.3.2")
   :group 'binky-faces)
 
-(defface binky-highlight-add
-  `((t (:inherit binky-highlight
+(defface binky-hl-add
+  `((t (:inherit binky-hl
         :background ,(face-foreground 'binky-preview-header))))
   "Face used to highlight the line added to record."
   :package-version '(binky . "1.3.2")
   :group 'binky-faces)
 
-(defface binky-highlight-delete
-  `((t (:inherit binky-highlight
+(defface binky-hl-delete
+  `((t (:inherit binky-hl
         :background ,(face-foreground 'binky-preview-mark-recent))))
   "Face used to highlight the line deleted from record."
   :package-version '(binky . "1.3.2")
   :group 'binky-faces)
 
-(defface binky-highlight-view
-  `((t (:inherit binky-highlight
+(defface binky-hl-view
+  `((t (:inherit binky-hl
         :background ,(face-foreground 'binky-preview-mark-back))))
   "Face used to highlight the line viewed."
   :package-version '(binky . "1.3.2")
   :group 'binky-faces)
 
-(defface binky-highlight-jump
-  `((t (:inherit binky-highlight
+(defface binky-hl-jump
+  `((t (:inherit binky-hl
         :background ,(face-foreground 'binky-preview-mark-manual))))
   "Face used to highlight the line jumped to."
   :package-version '(binky . "1.3.2")
   :group 'binky-faces)
 
-(defface binky-highlight-warn
-  `((t (:inherit binky-highlight
+(defface binky-hl-warn
+  `((t (:inherit binky-hl
         :background ,(face-foreground 'binky-preview-mark-back))))
   "Face used to highlight the line already record."
   :package-version '(binky . "1.3.2")
@@ -407,7 +415,7 @@ record properties.")
 (defvar binky-back-record-update-hook nil
   "Hook run when the variable `binky-back-record' changes.")
 
-(defvar-local binky--highlight-overlay nil
+(defvar-local binky-hl-overlay nil
   "Overlay used to highlight the line operated on.")
 
 (defvar binky-current-buffer nil
@@ -787,19 +795,19 @@ redisplay the preview.  If it's nil, toggle the preview."
 
 (defun binky--highlight (cmd)
   "Highlight the line where CMD be called."
-  (when (and (numberp binky-highlight-duration)
-		     (> binky-highlight-duration 0))
+  (when (and (numberp binky-hl-duration)
+		     (> binky-hl-duration 0))
     (let ((beg (line-beginning-position))
           (end (line-beginning-position 2)))
-      (if binky--highlight-overlay
-          (move-overlay binky--highlight-overlay beg end)
-	    (setq binky--highlight-overlay (make-overlay beg end)))
-	  (overlay-put binky--highlight-overlay 'window (selected-window))
-      (overlay-put binky--highlight-overlay
+      (if binky-hl-overlay
+          (move-overlay binky-hl-overlay beg end)
+	    (setq binky-hl-overlay (make-overlay beg end)))
+	  (overlay-put binky-hl-overlay 'window (selected-window))
+      (overlay-put binky-hl-overlay
                    'face
-                   (intern (concat "binky-highlight-" (symbol-name cmd)))))
-    (sit-for binky-highlight-duration)
-    (delete-overlay binky--highlight-overlay)))
+                   (intern (concat "binky-hl-" (symbol-name cmd)))))
+    (sit-for binky-hl-duration)
+    (delete-overlay binky-hl-overlay)))
 
 (defun binky--mark-propertize (mark &optional replace-string killed)
   "Return propertized string of MARK character.
