@@ -811,13 +811,15 @@ redisplay the preview.  If it's nil, toggle the preview."
       (if (overlayp binky-hl-overlay)
           (move-overlay binky-hl-overlay beg end)
 	    (setq binky-hl-overlay (make-overlay beg end)))
-      ;; only highlight line in selected window
+      ;; NOTE only highlight line in selected window
 	  (overlay-put binky-hl-overlay 'window (selected-window))
       (if (and binky-hl-use-pulse (pulse-available-p))
           (let* ((pulse-flag t)
                  (pulse-iterations 20)
                  (pulse-delay (/ binky-hl-duration pulse-iterations)))
             (overlay-put binky-hl-overlay 'pulse-delete t)
+            ;; NOTE must set :background attribute directly in face, don't
+            ;; use :inverse-video etc which don't take effect in pulse
             (pulse-momentary-highlight-overlay binky-hl-overlay face))
         (overlay-put binky-hl-overlay 'face face)
         (sit-for binky-hl-duration)
