@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.3.2](https://github.com/liuyinz/binky.el/compare/v1.3.2..v1.3.2) - 2023-09-04
+## [1.3.2](https://github.com/liuyinz/binky.el/compare/v1.3.1..v1.3.2) - 2023-09-04
 
 ### Bug Fixes
 
@@ -23,7 +23,7 @@
 - **(highlight)** [**breaking**] rename vars, faces and functions related to highlight - ([cb74f22](https://github.com/liuyinz/binky.el/commit/cb74f22faefc60ec2bf741fce7e9655bcc8090f1))
 - rename internal var binky--project-root - ([c6dcaf3](https://github.com/liuyinz/binky.el/commit/c6dcaf3caec6056ce4bb17d75e267015a1d81f90))
 
-## [1.3.1](https://github.com/liuyinz/binky.el/compare/v1.3.1..v1.3.1) - 2023-09-04
+## [1.3.1](https://github.com/liuyinz/binky.el/compare/v1.3.0..v1.3.1) - 2023-09-04
 
 ### Bug Fixes
 
