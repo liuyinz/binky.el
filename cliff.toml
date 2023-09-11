@@ -7,7 +7,8 @@ header = """
 # Changelog\n
 """
 # template for the changelog body
-# https://tera.netlify.app/docs
+# https://keats.github.io/tera/docs/
+
 body = """
 {% if version %}\
     {% if previous.version %}\
