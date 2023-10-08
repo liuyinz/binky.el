@@ -43,29 +43,6 @@
 
 ;;; Customize
 
-(define-obsolete-variable-alias 'binky-mark-auto 'binky-mark-recent "1.2.0")
-(define-obsolete-variable-alias 'binky-record-sort-by 'binky-recent-sort-by "1.2.0")
-(define-obsolete-variable-alias 'binky-record-distance 'binky-distance "1.2.0")
-(define-obsolete-variable-alias 'binky-record-prune 'binky-prune "1.2.0")
-(define-obsolete-variable-alias 'binky-mark-overwrite 'binky-overwrite "1.2.2")
-(define-obsolete-variable-alias 'binky-preview-auto-first 'binky-preview-order "1.2.0")
-(define-obsolete-variable-alias 'binky-margin-side 'binky-indicator-side "1.2.2")
-(define-obsolete-variable-alias 'binky-highlight-duration 'binky-hl-duration "1.3.2")
-
-(define-obsolete-face-alias 'binky-preview-column-mark-auto 'binky-preview-mark-recent "1.2.0")
-(define-obsolete-face-alias 'binky-preview-column-mark-back 'binky-preview-mark-back "1.2.0")
-(define-obsolete-face-alias 'binky-preview-column-mark-manual 'binky-preview-mark-manual "1.2.0")
-(define-obsolete-face-alias 'binky-preview-column-name 'binky-preview-name "1.2.0")
-(define-obsolete-face-alias 'binky-preview-column-name-same 'binky-preview-name-same "1.2.0")
-(define-obsolete-face-alias 'binky-preview-column-line 'binky-preview-line "1.2.0")
-(define-obsolete-face-alias 'binky-preview-column-mode 'binky-preview-mode "1.2.0")
-(define-obsolete-face-alias 'binky-highlight 'binky-hl "1.3.2")
-(define-obsolete-face-alias 'binky-highlight-add 'binky-hl-add "1.3.2")
-(define-obsolete-face-alias 'binky-highlight-delete 'binky-hl-delete "1.3.2")
-(define-obsolete-face-alias 'binky-highlight-view 'binky-hl-view "1.3.2")
-(define-obsolete-face-alias 'binky-highlight-jump 'binky-hl-jump "1.3.2")
-(define-obsolete-face-alias 'binky-highlight-warn 'binky-hl-warn "1.3.2")
-
 (defgroup binky nil
   "Jump between points like a rabbit."
   :prefix "binky-"
