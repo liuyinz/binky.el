@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.3.3](https://github.com/liuyinz/binky.el/compare/v1.3.2..v1.3.3) - 2023-10-14
+
+### Bug Fixes
+
+- don't recomputate project root for no file-visited buffer - ([bc89652](https://github.com/liuyinz/binky.el/commit/bc89652905fe6aadddd69694c4d2e0ea616563b1))
+
+### Documentation
+
+- fix typos in version comparison - ([d64f4b7](https://github.com/liuyinz/binky.el/commit/d64f4b7564a51d8d31002fa223fc386c75fe9c8a))
+
+### Miscellaneous Chores
+
+- **(changelog)** update docs link for tera - ([19fd177](https://github.com/liuyinz/binky.el/commit/19fd177eebf62b8f58497d526dd3fb066ee1ca2e))
+- **(ci)** update actions/chekcout - ([8ab7468](https://github.com/liuyinz/binky.el/commit/8ab74683ce4bd8fdf58dd188ee035f0af0250095))
+
+### Refactoring
+
+- remove all obsolete alias - ([98e4922](https://github.com/liuyinz/binky.el/commit/98e4922fe5038ac5fe61cdc624ec07c60680923a))
+
 ## [1.3.2](https://github.com/liuyinz/binky.el/compare/v1.3.1..v1.3.2) - 2023-09-04
 
 ### Bug Fixes
@@ -91,7 +110,7 @@
 - print message when toggle group view - ([19bab6e](https://github.com/liuyinz/binky.el/commit/19bab6e9f2073ae6ccb917e64df339ee80cd8da3))
 - rename var binky-mark-overwrite to binky-overwrite - ([b6008b0](https://github.com/liuyinz/binky.el/commit/b6008b084828eced72a48cc1c88da83a18a95779))
 - rename internal var and functions - ([150f65c](https://github.com/liuyinz/binky.el/commit/150f65c408f791f8a8526f6c4666dcbbbea3e219))
-- use seq-\* functions as much as possible - ([f8d21ca](https://github.com/liuyinz/binky.el/commit/f8d21ca0804a8dc733bafdd1608ca3c05860ce22))
+- use seq-* functions as much as possible - ([f8d21ca](https://github.com/liuyinz/binky.el/commit/f8d21ca0804a8dc733bafdd1608ca3c05860ce22))
 - remove duplicated code - ([a1bb3e4](https://github.com/liuyinz/binky.el/commit/a1bb3e4197ffeb4f534ee23b860b577a156eb81a))
 - split binky-margin-mode into separate file - ([8311721](https://github.com/liuyinz/binky.el/commit/8311721ead515711379cd0e81f8f5cd9dabc4f4f))
 - rename binky-mode.el to binky.el - ([779bcc8](https://github.com/liuyinz/binky.el/commit/779bcc8216eb3f8c41ef9ce949a79f00e616001f))
@@ -175,7 +194,7 @@
 ### Features
 
 - support margin indicator for back, auto marks - ([d355f2a](https://github.com/liuyinz/binky.el/commit/d355f2ad289ff1ca5b0d5cb0a52da4a036045f47))
-- adjust prompt color with binky-\* commands - ([ee6d482](https://github.com/liuyinz/binky.el/commit/ee6d482e9a27ce1721ef3b716aa76de714b7c665))
+- adjust prompt color with binky-* commands - ([ee6d482](https://github.com/liuyinz/binky.el/commit/ee6d482e9a27ce1721ef3b716aa76de714b7c665))
 - add command binky-view - ([16b1532](https://github.com/liuyinz/binky.el/commit/16b1532d025666d863322b22cdabf76530bc8b13))
 
 ### Miscellaneous Chores
