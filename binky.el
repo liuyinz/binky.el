@@ -456,23 +456,24 @@ Optional arg POSITION could be a marker or number."
   "Get the path to the project root.
 Return nil if no project was found."
   (or binky-project-root
-      (setq binky-project-root
-            (cond
-             ((and (memq binky-project-detection '(auto ffip))
-                   (fboundp 'ffip-project-root))
-              (let ((inhibit-message t))
-                (ffip-project-root)))
-             ((and (memq binky-project-detection '(auto projectile))
-                   (bound-and-true-p projectile-mode))
-              (projectile-project-root))
-             ((and (memq binky-project-detection '(auto project))
-                   (fboundp 'project-current))
-              (when-let ((project (project-current)))
-                (expand-file-name
-                 (if (fboundp 'project-root)
-                     (project-root project)
-                   (car (with-no-warnings
-                          (project-roots project)))))))))))
+      (and (buffer-file-name)
+           (setq binky-project-root
+                 (cond
+                  ((and (memq binky-project-detection '(auto ffip))
+                        (fboundp 'ffip-project-root))
+                   (let ((inhibit-message t))
+                     (ffip-project-root)))
+                  ((and (memq binky-project-detection '(auto projectile))
+                        (bound-and-true-p projectile-mode))
+                   (projectile-project-root))
+                  ((and (memq binky-project-detection '(auto project))
+                        (fboundp 'project-current))
+                   (when-let ((project (project-current)))
+                     (expand-file-name
+                      (if (fboundp 'project-root)
+                          (project-root project)
+                        (car (with-no-warnings
+                               (project-roots project))))))))))))
 
 (defun binky--regexp-match (lst)
   "Return non-nil if current buffer name match the LST."
