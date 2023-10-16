@@ -234,6 +234,12 @@ If nil, disable the highlight feature."
   :package-version '(binky . "1.2.2")
   :group 'binky)
 
+(defcustom binky-cache-file (locate-user-emacs-file "binky-manual.eld")
+  "Cache file to store records in `binky-manual-list'."
+  :type 'file
+  :package-version '(binky . "1.3.4")
+  :group 'binky)
+
 ;; Faces
 
 (defgroup binky-faces nil
@@ -1072,6 +1078,39 @@ If BACKWARD is non-nil, jump to previous one."
   "Jump to previous manual record in current buffer if exists."
   (interactive)
   (binky-next-in-buffer t))
+
+;;;###autoload
+(defun binky-save-file ()
+  "Save variable `binky-manual-alist' to file."
+  (interactive)
+  (let ((file binky-cache-file))
+    (make-directory (file-name-directory file) t)
+    (with-temp-file file
+      (let ((print-level nil)
+            (print-length nil))
+        (pp (mapcar (lambda (record)
+                      (append (list (car record) nil nil)
+                              (seq-subseq (binky--parse record) 3)))
+                    (binky--filter 'file #'stringp))
+            (current-buffer))))))
+
+;;;###autoload
+(defun binky-read-file ()
+  "Read variable `binky-manual-alist' from file."
+  (interactive)
+  (with-demoted-errors "Binky error: %S"
+    (and (file-exists-p binky-cache-file)
+         (with-temp-buffer
+           (insert-file-contents binky-cache-file)
+           (cl-loop for record in (read (current-buffer))
+                    collect
+                    (if-let ((buf (get-file-buffer (binky--prop record 'file))))
+                        (with-current-buffer buf
+                          (cons (car record)
+                                (binky--marker (binky--prop record 'position))))
+                      record)
+                    into result
+                    finally do (setq binky-manual-alist result))))))
 
 ;;;###autoload
 (define-minor-mode binky-mode
