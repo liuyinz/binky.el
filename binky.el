@@ -1081,8 +1081,8 @@ If BACKWARD is non-nil, jump to previous one."
   (binky-next-in-buffer t))
 
 ;;;###autoload
-(defun binky-save-file ()
-  "Save variable `binky-manual-alist' to file."
+(defun binky-save ()
+  "Save manual records informations to file."
   (interactive)
   (let ((file binky-cache-file))
     (make-directory (file-name-directory file) t)
@@ -1096,8 +1096,8 @@ If BACKWARD is non-nil, jump to previous one."
             (current-buffer))))))
 
 ;;;###autoload
-(defun binky-read-file ()
-  "Read variable `binky-manual-alist' from file."
+(defun binky-restore ()
+  "Restore manual records informations from file."
   (interactive)
   (with-demoted-errors "Binky error: %S"
     (and (file-exists-p binky-cache-file)

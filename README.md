@@ -101,6 +101,8 @@ Install with `M-x package-install` `RET` `binky` within Emacs.
 
 - `binky-margin-mode` : toggle to enable or disable margin indicator feature
 
+- `binky-save` and `binky-restore`: save and restore manual records from file
+
 ## Customization
 
 Lots of options are provided, see customization part in file.
@@ -137,7 +139,7 @@ Enjoy it.
 - [x] ~~More sorting strategy: frecency, duration~~
 - [x] Add `SPC` to toggle preview records in groups
 - [x] Show same buffer records first in groups view
-- [ ] Add command to store records cross sessions
+- [x] Add command to store records cross sessions
 - [ ] Fringe indicator support
 
 ## FAQ
