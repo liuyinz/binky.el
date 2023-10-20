@@ -421,6 +421,15 @@ record properties.")
 (defvar binky-mark-manual nil
   "List of legal marks used in manual records.")
 
+(defvar binky-message-alist
+  '((illegal   . "is illegal")
+    (overwrite . "is overwritten")
+    (exist     . "already exists")
+    (duplicate . "has already record current place")
+    (non-exist . "doesn't exist")
+    (toggle    . "toggle groups view"))
+  "Alist of binky status and messages.")
+
 (defvar-local binky-project-root nil
   "Project path of current buffer located.")
 
@@ -436,18 +445,11 @@ ARGS format is as same as `format' command."
 (defun binky--message (mark status &optional duration)
   "Echo information about MARK according to STATUS.
 Wait for DURATION seconds and then redisplay."
-  (let ((message-map '((illegal   . "is illegal")
-                       (overwrite . "is overwritten")
-                       (exist     . "already exists")
-                       (duplicate . "has already record current place")
-                       (non-exist . "doesn't exist")
-                       (toggle    . "toggle groups view"))))
-    (message "Mark %s %s."
-             (propertize (single-key-description mark t)
-                         'face
-                         'binky-preview-mark-manual)
-             (alist-get status message-map))
-    (sit-for (or duration 0.8) t)))
+  (message "Mark %s %s." (propertize (single-key-description mark t)
+                                     'face
+                                     'binky-preview-mark-manual)
+           (alist-get status binky-message-alist))
+  (sit-for (or duration 0.8) t))
 
 (defun binky--marker (&optional position)
   "Return a marker at point or POSITION and record the buffer by binky.

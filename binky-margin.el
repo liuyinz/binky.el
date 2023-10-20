@@ -110,5 +110,3 @@ You probably shouldn't use this function directly."
 
 (provide 'binky-margin)
 ;;; binky-margin.el ends here
-
-
