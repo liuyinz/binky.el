@@ -929,10 +929,10 @@ window regardless.  Press \\[keyboard-quit] to quit."
     (binky--highlight 'warn)
     (binky--message mark 'exist))
    (t
+    (and (binky--mark-get mark) binky-overwrite (binky--message mark 'overwrite))
     (binky--highlight 'add)
     (setf (alist-get mark binky-manual-alist) (binky--marker))
-    (run-hooks 'binky-manual-alist-update-hook)
-    (and binky-overwrite (binky--message mark 'overwrite)))))
+    (run-hooks 'binky-manual-alist-update-hook))))
 
 (defun binky--mark-delete (mark)
   "Delete (MARK . INFO) from `binky-manual-alist'."
