@@ -920,20 +920,30 @@ window regardless.  Press \\[keyboard-quit] to quit."
    ((eq major-mode 'xwidget-webkit-mode)
     (message "%s is not allowed" major-mode))
    ((binky--duplicated-p (point-marker))
-    (let ((record (binky--duplicated-p (point-marker))))
-      (binky--highlight 'warn)
+    (cl-destructuring-bind (dup-mark . dup-pos)
+        (binky--duplicated-p (point-marker))
       (save-excursion
-        (goto-char (cdr record))
+        (goto-char dup-pos)
         (binky--highlight 'warn))
-      (binky--message (car record) 'duplicate)))
+      (binky--message dup-mark 'duplicate)))
    ((not (eq (binky--mark-type mark) 'manual))
     (binky--message mark 'illegal))
    ((and (binky--mark-get mark) (not binky-overwrite))
-    (binky--highlight 'warn)
+    (save-excursion
+      (goto-char (cdr (binky--mark-get mark)))
+      (binky--highlight 'warn))
     (binky--message mark 'exist))
    (t
-    (and (binky--mark-get mark) binky-overwrite (binky--message mark 'overwrite))
     (binky--highlight 'add)
+    (when-let (orig (binky--mark-get mark))
+      ;; BUG pulse could not flash twice in one command,
+      ;; only show highlihgt overwritten line when it
+      ;; do not use pulse style
+      (unless binky-hl-use-pulse
+        (save-excursion
+          (goto-char (cdr orig))
+          (binky--highlight 'delete)))
+      (binky--message mark 'overwrite))
     (setf (alist-get mark binky-manual-alist) (binky--marker))
     (run-hooks 'binky-manual-alist-update-hook))))
 
