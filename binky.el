@@ -234,10 +234,10 @@ If nil, disable the highlight feature."
   :package-version '(binky . "1.2.2")
   :group 'binky)
 
-(defcustom binky-cache-file (locate-user-emacs-file "binky-manual.eld")
-  "Cache file to store records in `binky-manual-list'."
+(defcustom binky-cache-directory (locate-user-emacs-file "binky-save/")
+  "Cache directory to store records of `binky-manual-list'."
   :type 'file
-  :package-version '(binky . "1.3.4")
+  :package-version '(binky . "1.4.0")
   :group 'binky)
 
 ;; Faces
@@ -1080,13 +1080,22 @@ If BACKWARD is non-nil, jump to previous one."
   (interactive)
   (binky-next-in-buffer t))
 
+(defun binky-select-cache (file prompt &optional mustmatch)
+  "Return binky cache FILE.
+Prompting with PROMPT amd MUSTMATCH if called interactively, otherwise return
+FILE or default cache."
+  (if current-prefix-arg
+      (read-file-name prompt binky-cache-directory nil mustmatch)
+    (expand-file-name (or file "default.eld") binky-cache-directory)))
+
 ;;;###autoload
-(defun binky-save ()
-  "Save manual records informations to file."
+(defun binky-save (&optional file)
+  "Save manual records informations to FILE.
+If optional argument FILE is nil, choose default file instead."
   (interactive)
-  (let ((file binky-cache-file))
-    (make-directory (file-name-directory file) t)
-    (with-temp-file file
+  (when-let ((output (binky-select-cache file "Save to:")))
+    (make-directory binky-cache-directory t)
+    (with-temp-file output
       (let ((print-level nil)
             (print-length nil))
         (pp (mapcar (lambda (record)
@@ -1096,22 +1105,24 @@ If BACKWARD is non-nil, jump to previous one."
             (current-buffer))))))
 
 ;;;###autoload
-(defun binky-restore ()
-  "Restore manual records informations from file."
+(defun binky-restore (&optional file)
+  "Restore manual records informations from FILE.
+This command will overwrite `binky-manual-alist' by force."
   (interactive)
-  (with-demoted-errors "Binky error: %S"
-    (and (file-exists-p binky-cache-file)
-         (with-temp-buffer
-           (insert-file-contents binky-cache-file)
-           (cl-loop for record in (read (current-buffer))
-                    collect
-                    (if-let ((buf (get-file-buffer (binky--prop record 'file))))
-                        (with-current-buffer buf
-                          (cons (car record)
-                                (binky--marker (binky--prop record 'position))))
-                      record)
-                    into result
-                    finally do (setq binky-manual-alist result))))))
+  (when-let* ((input (binky-select-cache file "Read from :" t))
+              ((file-exists-p input)))
+    (with-temp-buffer
+      (insert-file-contents input)
+      (cl-loop for record in (read (current-buffer))
+               collect
+               (if-let ((buf (get-file-buffer (binky--prop record 'file))))
+                   (with-current-buffer buf
+                     (cons (car record)
+                           (binky--marker (binky--prop record 'position))))
+                 record)
+               into result
+               finally do
+               (setq binky-manual-alist result)))))
 
 ;;;###autoload
 (define-minor-mode binky-mode
