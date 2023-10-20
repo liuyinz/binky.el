@@ -184,8 +184,8 @@ Usually, `context' column should be placed at the end and not truncated."
   :type '(alist
           :key-type symbol
           :options '(mark name line project mode context)
-		  :value-type '(group (choice integer float (const nil))
-							  (choice integer float (const nil))))
+		  :value-type (group (choice integer float (const nil))
+							 (choice integer float (const nil))))
   :package-version '(binky . "1.3.0")
   :group 'binky)
 
@@ -236,7 +236,7 @@ If nil, disable the highlight feature."
 
 (defcustom binky-cache-directory (locate-user-emacs-file "binky-save/")
   "Cache directory to store records of `binky-manual-list'."
-  :type 'file
+  :type 'directory
   :package-version '(binky . "1.4.0")
   :group 'binky)
 
