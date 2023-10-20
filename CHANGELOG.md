@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.4.0](https://github.com/liuyinz/binky.el/compare/v1.3.3..v1.4.0) - 2023-10-20
+
+### Bug Fixes
+
+- wrong overwrite message even add new mark - ([a50d016](https://github.com/liuyinz/binky.el/commit/a50d016a751a23358f8f91c0ace63a87d2e5e00e))
+
+### Features
+
+- add command to read/save manual records from last session - ([bc07b17](https://github.com/liuyinz/binky.el/commit/bc07b17338f7ea1ed7c152cc698f89d3a3cc5f71))
+- support save and restore records with different source - ([69ba442](https://github.com/liuyinz/binky.el/commit/69ba4425826a3ebb6937d18f0e87ecceab0bc184))
+
+### Refactoring
+
+- internal function binky--auto-update - ([ded43d2](https://github.com/liuyinz/binky.el/commit/ded43d2286d1f36e1aedc2b6778b706a5a84a9a4))
+- rename commands binky-save/restore - ([7cb000b](https://github.com/liuyinz/binky.el/commit/7cb000b91ba3dd63194ad61f16d4652f58ad8644))
+
 ## [1.3.3](https://github.com/liuyinz/binky.el/compare/v1.3.2..v1.3.3) - 2023-10-14
 
 ### Bug Fixes
