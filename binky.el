@@ -789,13 +789,13 @@ redisplay the preview.  If it's nil, toggle the preview."
 	  (setq-local truncate-lines t)
       (setq-local buffer-read-only t))))
 
-(defun binky--highlight (cmd)
-  "Highlight the line where CMD be called."
+(defun binky--highlight (type)
+  "Highlight the current line with TYPE related face."
   (when (and (numberp binky-hl-duration)
 		     (> binky-hl-duration 0))
     (let ((beg (line-beginning-position))
           (end (line-beginning-position 2))
-          (face (intern (concat "binky-hl-" (symbol-name cmd)))))
+          (face (intern (concat "binky-hl-" (symbol-name type)))))
       (if (overlayp binky-hl-overlay)
           (move-overlay binky-hl-overlay beg end)
 	    (setq binky-hl-overlay (make-overlay beg end)))
