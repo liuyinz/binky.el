@@ -114,7 +114,7 @@ nil means to use `default-directory'.
   '("\\`\\*\\(scratch\\|info\\)\\*\\'")
   "List of regexps for buffer name included in `binky-recent-alist'.
 For example, buffer *scratch* is always included by default."
-  :type '(repeat string)
+  :type '(repeat regexp)
   :package-version '(binky . "1.2.0")
   :group 'binky)
 
@@ -124,7 +124,7 @@ For example, buffer *scratch* is always included by default."
 When a buffer name matches any of the regexps, it would not be record
 automatically unless it matches `binky-include-regexps'.  By default, all buffer
 names start with '*' or ' ' are excluded."
-  :type '(repeat string)
+  :type '(repeat regexp)
   :group 'binky)
 
 (defcustom binky-exclude-modes
@@ -184,8 +184,8 @@ Usually, `context' column should be placed at the end and not truncated."
   :type '(alist
           :key-type symbol
           :options '(mark name line project mode context)
-		  :value-type (group (choice integer float (const nil))
-							 (choice integer float (const nil))))
+		  :value-type (group (choice number (const nil))
+							 (choice number (const nil))))
   :package-version '(binky . "1.3.0")
   :group 'binky)
 
