@@ -439,8 +439,9 @@ Wait for DURATION seconds and then redisplay."
   (let ((message-map '((illegal   . "is illegal")
                        (overwrite . "is overwritten")
                        (exist     . "already exists")
+                       (duplicate . "has already record current place")
                        (non-exist . "doesn't exist")
-                       (toggle    .  "toggle groups view"))))
+                       (toggle    . "toggle groups view"))))
     (message "Mark %s %s."
              (propertize (single-key-description mark t)
                          'face
@@ -922,7 +923,7 @@ window regardless.  Press \\[keyboard-quit] to quit."
       (save-excursion
         (goto-char (cdr record))
         (binky--highlight 'warn))
-      (binky--message (car record) 'exist)))
+      (binky--message (car record) 'duplicate)))
    ((not (eq (binky--mark-type mark) 'manual))
     (binky--message mark 'illegal))
    ((and (binky--mark-get mark) (not binky-overwrite))
