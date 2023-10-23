@@ -1001,31 +1001,31 @@ If optional arg OTHER is non-nil, jump to other window."
 ;;;###autoload
 (defun binky-add (mark)
   "Add the record in current point with MARK."
-  (interactive (list (binky--mark-read "Add:")))
+  (interactive (list (binky--mark-read "Binky add:")))
   (binky--mark-add mark))
 
 ;;;###autoload
 (defun binky-delete (mark)
   "Delete the record MARK."
-  (interactive (list (binky--mark-read "Delete:")))
+  (interactive (list (binky--mark-read "Binky delete:")))
   (binky--mark-delete mark))
 
 ;;;###autoload
 (defun binky-jump (mark)
   "Jump to point of record MARK."
-  (interactive (list (binky--mark-read "Jump:")))
+  (interactive (list (binky--mark-read "Binky jump:")))
   (binky--mark-jump mark))
 
 ;;;###autoload
 (defun binky-jump-other-window (mark)
   "Jump to point of record MARK in other window."
-  (interactive (list (binky--mark-read "Jump in other window:")))
+  (interactive (list (binky--mark-read "Binky jump in other window:")))
   (binky--mark-jump mark t))
 
 ;;;###autoload
 (defun binky-view (mark)
   "View the point of record MARK in other window."
-  (interactive (list (binky--mark-read "View:")))
+  (interactive (list (binky--mark-read "Binky view:")))
   (binky--mark-view mark))
 
 ;;;###autoload
@@ -1042,7 +1042,7 @@ Interactively, PERSIST is the prefix argument.  With no prefix argument,
 it works as same as single command.  With a prefix argument, repeating commands
 until \\[keyboard-quit] pressed."
   (interactive (list (binky--mark-read
-                      (propertize "Binky:" 'face
+                      (propertize "Binky binky:" 'face
                                   (if current-prefix-arg
                                       'binky-preview-header
                                     'default))
