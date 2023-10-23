@@ -435,6 +435,12 @@ record properties.")
 
 ;;; Functions
 
+(defmacro binky--check (&rest body)
+  "Eval BODY forms only when `binky-mode' is enabled."
+  `(if (bound-and-true-p binky-mode)
+       (progn ,@body)
+     (user-error "Binky mode is not enabled yet")))
+
 (defun binky--log (&rest args)
   "Print infomations into `binky-log-buffer' about ARGS.
 ARGS format is as same as `format' command."
@@ -889,33 +895,34 @@ preview records at once.
 
 If `help-char' (or a member of `help-event-list') is pressed, display preview
 window regardless.  Press \\[keyboard-quit] to quit."
-  (setq binky-current-buffer (current-buffer))
-  (and preview (binky--preview 'redisplay))
-  (let ((timer (when (and (numberp binky-preview-delay)
-                          (null preview))
-		         (run-with-timer binky-preview-delay nil
-                                 (apply-partially #'binky--preview 'redisplay)))))
-    (unwind-protect
-        (progn
-		  (while (memq (binky--mark-type (read-key prompt) 'refresh)
-                       '(help group illegal))
-            (cl-case binky-current-type
-              (help (binky--preview))
-              (group
-               (progn
-                 (setq binky-preview-in-groups (not binky-preview-in-groups))
-                 (binky--preview 'redisplay)
-                 (binky--message last-input-event 'toggle)))
-              (illegal
-               (progn
-                 (binky--message last-input-event 'illegal)))))
-		  (if (eq binky-current-type 'quit)
-              (keyboard-quit)
-            (downcase (string-to-char (nreverse (single-key-description
-                                                 last-input-event t))))))
-	  (and (timerp timer) (cancel-timer timer))
-      (when (or (eq binky-current-type 'quit) (null preview))
-        (binky--preview 'close)))))
+  (binky--check
+   (setq binky-current-buffer (current-buffer))
+   (and preview (binky--preview 'redisplay))
+   (let ((timer (when (and (numberp binky-preview-delay)
+                           (null preview))
+		          (run-with-timer binky-preview-delay nil
+                                  (apply-partially #'binky--preview 'redisplay)))))
+     (unwind-protect
+         (progn
+		   (while (memq (binky--mark-type (read-key prompt) 'refresh)
+                        '(help group illegal))
+             (cl-case binky-current-type
+               (help (binky--preview))
+               (group
+                (progn
+                  (setq binky-preview-in-groups (not binky-preview-in-groups))
+                  (binky--preview 'redisplay)
+                  (binky--message last-input-event 'toggle)))
+               (illegal
+                (progn
+                  (binky--message last-input-event 'illegal)))))
+		   (if (eq binky-current-type 'quit)
+               (keyboard-quit)
+             (downcase (string-to-char (nreverse (single-key-description
+                                                  last-input-event t))))))
+	   (and (timerp timer) (cancel-timer timer))
+       (when (or (eq binky-current-type 'quit) (null preview))
+         (binky--preview 'close))))))
 
 (defun binky--mark-add (mark)
   "Add (MARK . MARKER) into records."
