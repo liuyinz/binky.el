@@ -54,18 +54,17 @@ If nil, mark character would be used instead.  Recommendation as follow:
     (dolist (ov (overlays-in (point-min) (point-max)))
       (when (overlay-get ov 'binky) (delete-overlay ov))))
   (when update
-    (dolist (record (binky--filter 'buffer
-                                   (current-buffer)
-                                   (binky--aggregate 'indicator)))
-      (let* ((pos (binky--prop record 'position))
+    (dolist (record (binky--filter :buffer (current-buffer)
+                                   (binky--records :indicator)))
+      (let* ((pos (binky--prop record :position))
              (ov (make-overlay pos pos)))
         (overlay-put ov 'binky t)
         (overlay-put ov 'before-string
-                     (binky-margin--spec (binky--prop record 'mark)))))))
+                     (binky-margin--spec (binky--prop record :mark)))))))
 
 (defun binky-margin--update ()
-  "Remove and update margin indicators in all recorded buffers if needed."
-  (dolist (buf (seq-filter #'binky--recorded-p (buffer-list)))
+  "Remove and update margin indicators in all marked buffers if needed."
+  (dolist (buf (seq-filter #'binky--marked-p (buffer-list)))
     (with-current-buffer buf
       ;; delete overlays
       (binky-margin--local-update
@@ -103,8 +102,8 @@ You probably shouldn't use this function directly."
   :group 'binky-margin
   (let ((cmd (if binky-margin-mode #'add-hook #'remove-hook)))
     (dolist (hook '(binky-mode-hook
-                    binky-manual-alist-update-hook
-                    binky-recent-alist-update-hook
+                    binky-manual-records-update-hook
+                    binky-recent-records-update-hook
                     binky-back-record-update-hook))
       (funcall cmd hook #'binky-margin--update))))
 
