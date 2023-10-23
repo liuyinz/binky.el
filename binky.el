@@ -1116,7 +1116,7 @@ FILE or default cache."
   "Save manual records informations to FILE.
 If optional argument FILE is nil, choose default file instead."
   (interactive)
-  (when-let ((output (binky-select-cache file "Save to:")))
+  (when-let ((output (binky-select-cache file "[Binky] save records to: ")))
     (make-directory binky-cache-directory t)
     (with-temp-file output
       (let ((print-level nil)
@@ -1131,7 +1131,7 @@ If optional argument FILE is nil, choose default file instead."
   "Restore manual records informations from FILE.
 This command will overwrite `binky-manual-records' by force."
   (interactive)
-  (when-let* ((input (binky-select-cache file "Read from :" t))
+  (when-let* ((input (binky-select-cache file "[Binky] read records from: " t))
               ((file-exists-p input)))
     (with-temp-buffer
       (insert-file-contents input)
