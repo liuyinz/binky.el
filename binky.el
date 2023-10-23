@@ -234,10 +234,10 @@ If nil, disable the highlight feature."
   :package-version '(binky . "1.2.2")
   :group 'binky)
 
-(defcustom binky-cache-directory (locate-user-emacs-file "binky-save/")
+(defcustom binky-cache-directory (locate-user-emacs-file "binky/cache/")
   "Cache directory to store records of `binky-manual-list'."
   :type 'directory
-  :package-version '(binky . "1.4.0")
+  :package-version '(binky . "1.4.1")
   :group 'binky)
 
 ;; Faces
