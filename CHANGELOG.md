@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.4.1](https://github.com/liuyinz/binky.el/compare/v1.4.0..v1.4.1) - 2023-10-23
+
+### Bug Fixes
+
+- error type format in defcustom - ([a860fe2](https://github.com/liuyinz/binky.el/commit/a860fe2a557cdcdc5153d55ed3ab3c42bc4987aa))
+- add duplicete status to provide more accurate description - ([6dce296](https://github.com/liuyinz/binky.el/commit/6dce29610c2262e2527b430cab4a51ee195282e4))
+- wrong value type in defcustoms - ([76fbce5](https://github.com/liuyinz/binky.el/commit/76fbce5b634eea0e04c3c996b2c2437bce15a7cb))
+- do not highlighting overwritten record if binky-hl-use-pulse is t - ([f954896](https://github.com/liuyinz/binky.el/commit/f954896d2add4eaef62326326d53b8779b9158f5))
+- error warning before calling commands if binky mode is not enabled - ([d18d4e8](https://github.com/liuyinz/binky.el/commit/d18d4e8b61426aa605bfdca0e6158784ebf59abb))
+
+### Refactoring
+
+- internal function binky--message - ([f37ecfd](https://github.com/liuyinz/binky.el/commit/f37ecfdea20574d9464574d4bd21f983c9145312))
+- internal functions and variables - ([382d1a1](https://github.com/liuyinz/binky.el/commit/382d1a1aca192de1046c5e44bdfaa08560006cf2))
+
 ## [1.4.0](https://github.com/liuyinz/binky.el/compare/v1.3.3..v1.4.0) - 2023-10-20
 
 ### Bug Fixes
@@ -9,7 +24,7 @@
 ### Features
 
 - add command to read/save manual records from last session - ([bc07b17](https://github.com/liuyinz/binky.el/commit/bc07b17338f7ea1ed7c152cc698f89d3a3cc5f71))
-- support save and restore records with different source - ([69ba442](https://github.com/liuyinz/binky.el/commit/69ba4425826a3ebb6937d18f0e87ecceab0bc184))
+- support save and restore records with different source - ([838c188](https://github.com/liuyinz/binky.el/commit/838c188358247d68b03b8c926629be189baae1f4))
 
 ### Refactoring
 
