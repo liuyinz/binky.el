@@ -436,7 +436,7 @@ record properties.")
 ;;; Functions
 
 (defmacro binky--check (&rest body)
-  "Eval BODY forms only when `binky-mode' is enabled."
+  "Eval BODY forms only when binky mode is enabled."
   `(if (bound-and-true-p binky-mode)
        (progn ,@body)
      (user-error "Binky mode is not enabled yet")))
