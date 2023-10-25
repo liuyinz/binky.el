@@ -126,9 +126,8 @@ Lots of options are provided, see customization part in file.
 - Vim-like mark and jump
 - Flexible and customizable
 
-I have used dogears for several months, and it's great in most features except so many information
-I don't need. A better and [Vim-marks](https://vim.fandom.com/wiki/Using_marks) style jumping system is the top priority for me.
-While evil is too heavy, so I wrote this package to imitate parts of features.
+I have used dogears for several months, and it's great in most features except lack of [Vim-marks](https://vim.fandom.com/wiki/Using_marks) style jumping feature 
+which is top priority for me. While evil is too heavy, so I wrote this package to imitate parts of features.
 
 Enjoy it.
 
