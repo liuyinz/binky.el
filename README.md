@@ -139,6 +139,7 @@ Enjoy it.
 - [x] Add `SPC` to toggle preview records in groups
 - [x] Show same buffer records first in groups view
 - [x] Add command to store records cross sessions
+- [ ] optimize preview color and style for easily lookup
 - [ ] Fringe indicator support
 
 ## FAQ
