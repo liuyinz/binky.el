@@ -140,6 +140,7 @@ Enjoy it.
 - [x] Show same buffer records first in groups view
 - [x] Add command to store records cross sessions
 - [ ] optimize preview color and style for easily lookup
+- [ ] support for xref history
 - [ ] Fringe indicator support
 
 ## FAQ
