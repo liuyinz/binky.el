@@ -70,7 +70,8 @@ mark.  Letters, digits, punctuation, etc.  If nil, disable the feature.
   "List of printable characters to record recent used buffers.
 Any self-inserting character between ! (33) - ~ (126) is allowed to used as
 marks.  Letters, digits, punctuation, etc.  If nil, disable the feature."
-  :type '(choice (repeat (choice (character :tag "Printable character as mark")))
+  :type '(choice (repeat (choice
+                          (character :tag "Printable character as mark")))
                  (const :tag "Disable recent marks" nil))
   :group 'binky)
 
@@ -535,7 +536,7 @@ record."
 
 (defun binky--parse (record)
   "Parse RECORD and return list of properties.
-The format is (mark marker buffer name line project mode context file position)."
+With format (mark marker buffer name line project mode context file position)."
   (if-let* ((mark (car record))
             (marker (and (markerp (cdr record)) (cdr record)))
             (position (marker-position marker))
@@ -544,14 +545,16 @@ The format is (mark marker buffer name line project mode context file position).
         (list mark
               (buffer-name)
               (buffer-file-name)
-              (file-name-nondirectory (directory-file-name
-                                       (or (binky-project-root) default-directory)))
+              (file-name-nondirectory
+               (directory-file-name (or (binky-project-root)
+                                        default-directory)))
               (symbol-name major-mode)
               (line-number-at-pos position 'absolute)
               position
               (save-excursion
                 (goto-char marker)
-                (buffer-substring (line-beginning-position) (line-end-position)))
+                (buffer-substring (line-beginning-position)
+                                  (line-end-position)))
               (cl-case mark
                 (binky-mark-back 'back)
                 (binky-mark-recent 'recent)
@@ -583,7 +586,8 @@ The format is (mark marker buffer name line project mode context file position).
    (cl-case style
      (:union
       ;; orderless, non-uniq
-      (cons binky-back-record (append binky-manual-records binky-recent-records)))
+      (cons binky-back-record (append binky-manual-records
+                                      binky-recent-records)))
      (:indicator
       ;; orderless, uniq
       (cons binky-back-record
@@ -638,7 +642,8 @@ one argument."
                  finally do
                  (progn
                    ;; delete recent marker on the same line
-                   (let ((uniq (seq-remove (lambda (m) (binky--duplicated-p m 0))
+                   (let ((uniq (seq-remove (lambda (m)
+                                             (binky--duplicated-p m 0))
                                            result)))
                      (setq binky-recent-records
                            (seq-mapn
@@ -646,7 +651,9 @@ one argument."
                             marks
                             (if (eq binky-recent-sort-by 'recency)
                                 uniq
-                              (seq-sort-by #'binky--frequency-get #'> uniq)))))))
+                              (seq-sort-by #'binky--frequency-get
+                                           #'>
+                                           uniq)))))))
       (setq binky-recent-records nil))
     (unless (equal orig binky-recent-records)
       (run-hooks 'binky-recent-records-update-hook))))
@@ -719,9 +726,10 @@ ORDER is `<' or `>' to sort records by position, otherwise no sorting."
                     (end (max limit (string-width (symbol-name (car x))))))
 			   (if (zerop limit)
                    str
-                 ;; FIXME align error if buffer name contain punctuation character "—"
-                 ;; use such as `string-pixel-width'
-                 (truncate-string-to-width str end nil ?\s binky-preview-ellipsis))))
+                 ;; FIXME align error if buffer name contain punctuation
+                 ;; character "—", use such as `string-pixel-width'
+                 (truncate-string-to-width str end nil ?\s
+                                           binky-preview-ellipsis))))
 		   (binky--preview-column) "  ")))
 
 (defun binky--preview-propertize (record)
@@ -733,15 +741,16 @@ ORDER is `<' or `>' to sort records by position, otherwise no sorting."
           (seq-mapn
            (lambda (x y)
 	         (let ((column-face (intern (concat "binky-preview-"
-                                                (symbol-name x))))
-                   (cond-face (cond
-                               (killed 'binky-preview-killed)
-                               ((and (eq x 'name)
-                                     (equal y (buffer-name binky-current-buffer)))
-                                'binky-preview-name-same)
-                               (t nil))))
+                                                (symbol-name x)))))
                (cons x (if (or killed (facep column-face))
-                           (propertize y 'face (or cond-face column-face)) y))))
+                           (propertize
+                            y 'face
+                            (cond (killed 'binky-preview-killed)
+                                  ((and (eq x 'name)
+                                        (equal y (buffer-name
+                                                  binky-current-buffer)))
+                                   'binky-preview-name-same)
+                                  (t column-face))) y))))
            '(name line project mode context)
            (list (binky--prop record :name)
 		         (number-to-string (binky--prop record :line))
@@ -753,8 +762,8 @@ ORDER is `<' or `>' to sort records by position, otherwise no sorting."
   "Return formatted string of header for preview."
   (binky--preview-extract
    (mapcar (lambda (x)
-             (cons (car x)
-                   (propertize (symbol-name (car x)) 'face 'binky-preview-header)))
+             (cons (car x) (propertize (symbol-name (car x))
+                                       'face 'binky-preview-header)))
 		   (binky--preview-column))))
 
 (defun binky--preview (&optional action)
@@ -884,7 +893,8 @@ The `crtl' means to view record without jumping."
 Prefix would be \"C\" (ctrl) or \"M\" (alt)."
   (when-let* ((str (single-key-description mark t))
               ((string-match "\\(C\\|M\\)-\\(.\\)" str))
-              ((memq (string-to-char (match-string 2 str)) (binky--mark-legal))))
+              ((memq (string-to-char (match-string 2 str))
+                     (binky--mark-legal))))
     (match-string 1 str)))
 
 (defun binky--mark-read (prompt &optional preview)
@@ -901,7 +911,8 @@ window regardless.  Press \\[keyboard-quit] to quit."
    (let ((timer (when (and (numberp binky-preview-delay)
                            (null preview))
 		          (run-with-timer binky-preview-delay nil
-                                  (apply-partially #'binky--preview 'redisplay)))))
+                                  (apply-partially #'binky--preview
+                                                   'redisplay)))))
      (unwind-protect
          (progn
 		   (while (memq (binky--mark-type (read-key prompt) 'refresh)
@@ -1122,7 +1133,8 @@ If optional argument FILE is nil, choose default file instead."
       (let ((print-level nil)
             (print-length nil))
         (pp (mapcar (lambda (record)
-                      (cons (car record) (seq-subseq (binky--parse record) 1 9)))
+                      (cons (car record)
+                            (seq-subseq (binky--parse record) 1 9)))
                     (binky--filter :file #'stringp))
             (current-buffer))))))
 
@@ -1154,10 +1166,11 @@ you used and marked position."
   :group 'binky
   :global t
   (let ((cmd (if binky-mode #'add-hook #'remove-hook)))
-    (cl-loop for (hook . func) in '((buffer-list-update-hook . binky--auto-update)
-                                    (kill-buffer-hook . binky--swap-out)
-                                    (find-file-hook . binky--swap-in))
-             do (funcall cmd hook func)))
+    (cl-loop for (hook . func) in
+               '((buffer-list-update-hook . binky--auto-update)
+                 (kill-buffer-hook . binky--swap-out)
+                 (find-file-hook . binky--swap-in))
+               do (funcall cmd hook func)))
   (when (eq binky-recent-sort-by 'frequency)
     (if binky-mode
         (setq binky-frequency-timer
