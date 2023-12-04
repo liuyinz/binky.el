@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.4.2](https://github.com/liuyinz/binky.el/compare/v1.4.1..v1.4.2) - 2023-12-04
+
+### Documentation
+
+- **(README)** improve comparison experience - ([b27be66](https://github.com/liuyinz/binky.el/commit/b27be6624cbdc509dd7b1320e36048e0a3eaa216))
+- **(README)** update todo list - ([05792ad](https://github.com/liuyinz/binky.el/commit/05792ad3b8b5f60f29a5f2b70eae25118b7056a3))
+- update todo list - ([b4667b1](https://github.com/liuyinz/binky.el/commit/b4667b1f17a496fc5986fa7f0003d935a07b872d))
+
+### Features
+
+- add option binky-command-prefix and binky-command-map - ([ecc7e9a](https://github.com/liuyinz/binky.el/commit/ecc7e9a9a58d6335c41e900196fee610f78867fe))
+
+### Refactoring
+
+- change binky-cache-directory default value - ([bf9bd87](https://github.com/liuyinz/binky.el/commit/bf9bd87c44cd5ca5ede0f080fa510240d948a644))
+
 ## [1.4.1](https://github.com/liuyinz/binky.el/compare/v1.4.0..v1.4.1) - 2023-10-23
 
 ### Bug Fixes
