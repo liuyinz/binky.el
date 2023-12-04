@@ -49,6 +49,12 @@
   :group 'convenience
   :link '(url-link :tag "Repository" "https://github.com/liuyinz/binky-mode"))
 
+(defcustom binky-command-prefix "C-c b"
+  "The prefix for all `binky' commands."
+  :package-version '(binky . "1.4.2")
+  :type 'string
+  :group 'binky)
+
 (defcustom binky-mark-back ?,
   "Character used as mark to record last position before call `binky-jump'.
 Any self-inserting character between ! (33) - ~ (126) is allowed to used as
@@ -433,6 +439,26 @@ record properties.")
 
 (defvar-local binky-project-root nil
   "Project path of current buffer located.")
+
+(defvar binky-command-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "a" 'binky-add)
+    (define-key map "d" 'binky-delete)
+    (define-key map "j" 'binky-jump)
+    (define-key map "w" 'binky-jump-other-window)
+    (define-key map "v" 'binky-view)
+    (define-key map "b" 'binky-binky)
+    (define-key map "s" 'binky-save)
+    (define-key map "r" 'binky-restore)
+    (define-key map "t" 'binky-recent-toggle)
+    (define-key map "n" 'binky-next-in-buffer)
+    (define-key map "p" 'binky-previous-in-buffer)
+    map))
+(fset 'binky-command-map binky-command-map)
+
+;; Integrate with `repeat-mode' in Emacs 28
+(put #'binky-next-in-buffer 'repeat-map 'binky-command-map)
+(put #'binky-previous-in-buffer 'repeat-map 'binky-command-map)
 
 ;;; Functions
 
@@ -1165,6 +1191,7 @@ This global minor mode allows you to jump easily between buffers
 you used and marked position."
   :group 'binky
   :global t
+  :keymap `((,(kbd binky-command-prefix) . binky-command-map))
   (let ((cmd (if binky-mode #'add-hook #'remove-hook)))
     (cl-loop for (hook . func) in
                '((buffer-list-update-hook . binky--auto-update)
