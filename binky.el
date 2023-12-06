@@ -456,10 +456,6 @@ record properties.")
     map))
 (fset 'binky-command-map binky-command-map)
 
-;; Integrate with `repeat-mode' in Emacs 28
-(put #'binky-next-in-buffer 'repeat-map 'binky-command-map)
-(put #'binky-previous-in-buffer 'repeat-map 'binky-command-map)
-
 ;;; Functions
 
 (defmacro binky--check (&rest body)
