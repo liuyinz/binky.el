@@ -52,7 +52,7 @@
 (defcustom binky-command-prefix "C-c b"
   "The prefix for all `binky' commands."
   :package-version '(binky . "1.4.2")
-  :type 'string
+  :type 'key
   :group 'binky)
 
 (defcustom binky-mark-back ?,
