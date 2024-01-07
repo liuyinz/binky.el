@@ -1,6 +1,6 @@
 ;;; binky.el --- Jump between points like a rabbit -*- lexical-binding: t -*-
 
-;; Copyright (C) 2022, 2023 liuyinz
+;; Copyright (C) 2022, 2023, 2024 liuyinz
 
 ;; Author: liuyinz <liuyinz95@gmail.com>
 ;; Version: 1.4.2
