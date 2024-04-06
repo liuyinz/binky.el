@@ -372,6 +372,7 @@ If nil, disable the highlight feature."
   :package-version '(binky . "1.3.2")
   :group 'binky-faces)
 
+
 ;;; Variables
 
 (defvar binky-manual-records nil
@@ -456,6 +457,7 @@ record properties.")
     map))
 (fset 'binky-command-map binky-command-map)
 
+
 ;;; Functions
 
 (defmacro binky--check (&rest body)
@@ -1036,6 +1038,7 @@ If optional arg OTHER is non-nil, jump to other window."
             (binky--highlight 'view))))
     (binky--message mark 'non-exist)))
 
+
 ;;; Commands
 
 ;;;###autoload
@@ -1179,6 +1182,9 @@ This command will overwrite `binky-manual-records' by force."
                into result
                finally do
                (setq binky-manual-records result)))))
+
+
+;;; Minor mode
 
 ;;;###autoload
 (define-minor-mode binky-mode
