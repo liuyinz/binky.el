@@ -49,6 +49,11 @@
   :group 'convenience
   :link '(url-link :tag "Repository" "https://github.com/liuyinz/binky-mode"))
 
+(defcustom binky-debug nil
+  "Whether or not to output debug messages while in operation.
+Messages are written into the *binky-debug* buffer."
+  :type 'boolean)
+
 (defcustom binky-command-prefix "C-c b"
   "The prefix for all `binky' commands."
   :package-version '(binky . "1.4.2")
@@ -402,9 +407,6 @@ record properties.")
 (defvar binky-preview-buffer "*binky-preview*"
   "Buffer used to preview records.")
 
-(defvar binky-log-buffer "*binky-log*"
-  "Name of the binky log buffer.")
-
 (defvar binky-manual-records-update-hook nil
   "Hook run when the variable `binky-manual-records' changes.")
 
@@ -466,12 +468,17 @@ record properties.")
        (progn ,@body)
      (user-error "Binky mode is not enabled yet")))
 
-(defun binky--log (&rest args)
-  "Print infomations into `binky-log-buffer' about ARGS.
-ARGS format is as same as `format' command."
-  (with-current-buffer (get-buffer-create binky-log-buffer)
-    (goto-char (point-max))
-    (insert "\n" (apply #'format args))))
+(defun binky--debug (msg &rest args)
+  "Print infomations into *binky-debug* if `binky-debug' is non-nil.
+MSG and ARGS format is as same as `format' command."
+  (when binky-debug
+    (with-current-buffer "*binky-debug*"
+      (unless (derived-mode-p 'special-mode)
+        (special-mode))
+      (goto-char (point-max))
+      (let ((inhibit-read-only t))
+        (insert (apply #'format msg args))
+        (newline)))))
 
 (defun binky--message (mark status &optional duration)
   "Echo information about MARK according to STATUS.
