@@ -4,7 +4,7 @@
 
 ;; Author: liuyinz <liuyinz95@gmail.com>
 ;; Version: 1.4.2
-;; Package-Requires: ((emacs "26.3"))
+;; Package-Requires: ((emacs "29.1"))
 ;; Keywords: convenience
 ;; Homepage: https://github.com/liuyinz/binky-mode
 
@@ -502,25 +502,24 @@ Optional arg POSITION could be a marker or number."
 (defun binky-project-root ()
   "Get the path to the project root.
 Return nil if no project was found."
-  (or binky-project-root
-      (and (buffer-file-name)
-           (setq binky-project-root
-                 (cond
-                  ((and (memq binky-project-detection '(auto ffip))
-                        (fboundp 'ffip-project-root))
-                   (let ((inhibit-message t))
-                     (ffip-project-root)))
-                  ((and (memq binky-project-detection '(auto projectile))
-                        (bound-and-true-p projectile-mode))
-                   (projectile-project-root))
-                  ((and (memq binky-project-detection '(auto project))
-                        (fboundp 'project-current))
-                   (when-let ((project (project-current)))
-                     (expand-file-name
-                      (if (fboundp 'project-root)
-                          (project-root project)
-                        (car (with-no-warnings
-                               (project-roots project))))))))))))
+  (with-memoization binky-project-root
+    (and (buffer-file-name)
+         (cond
+          ((and (memq binky-project-detection '(auto ffip))
+                (fboundp 'ffip-project-root))
+           (let ((inhibit-message t))
+             (ffip-project-root)))
+          ((and (memq binky-project-detection '(auto projectile))
+                (bound-and-true-p projectile-mode))
+           (projectile-project-root))
+          ((and (memq binky-project-detection '(auto project))
+                (fboundp 'project-current))
+           (when-let ((project (project-current)))
+             (expand-file-name
+              (if (fboundp 'project-root)
+                  (project-root project)
+                (car (with-no-warnings
+                       (project-roots project)))))))))))
 
 (defun binky--regexp-match (lst)
   "Return non-nil if current buffer name match the LST."
@@ -874,21 +873,19 @@ face `binky-preview-killed' is used instead."
 
 (defun binky--mark-legal ()
   "Generate and return legal mark list for jumping."
-  (or binky-mark-legal
-      (setq binky-mark-legal
-            (seq-remove
-             (lambda (x) (memq x (list ?? ?\  binky-mark-quit nil)))
-             (seq-uniq
-              (cl-union (number-sequence ?a ?z)
-                        (cons binky-mark-back binky-mark-recent)))))))
+  (with-memoization binky-mark-legal
+    (seq-remove
+     (lambda (x) (memq x (list ?? ?\  binky-mark-quit nil)))
+     (seq-uniq
+      (cl-union (number-sequence ?a ?z)
+                (cons binky-mark-back binky-mark-recent))))))
 
 (defun binky--mark-manual ()
   "Generate and return legal mark list for manual."
-  (or binky-mark-manual
-      (setq binky-mark-manual
-            (cl-set-difference (number-sequence ?a ?z)
-                               (append (list binky-mark-quit binky-mark-back)
-                                       binky-mark-recent)))))
+  (with-memoization binky-mark-manual
+    (cl-set-difference (number-sequence ?a ?z)
+                       (append (list binky-mark-quit binky-mark-back)
+                               binky-mark-recent))))
 
 (defun binky--mark-type (mark &optional refresh)
   "Return type of MARK and update `binky-current-type' if REFRESH is non-nil.
