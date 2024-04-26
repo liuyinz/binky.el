@@ -404,9 +404,6 @@ record properties.")
 (defvar-local binky-marked nil
   "If non-nil, the buffer was once recorded by binky.")
 
-(defvar binky-preview-buffer "*binky-preview*"
-  "Buffer used to preview records.")
-
 (defvar binky-manual-records-update-hook nil
   "Hook run when the variable `binky-manual-records' changes.")
 
@@ -800,42 +797,42 @@ ORDER is `<' or `>' to sort records by position, otherwise no sorting."
   "Toggle preview window on the side `binky-preview-side'.
 If optional arg ACTION is `close', close preview, if it's `redisplay',
 redisplay the preview.  If it's nil, toggle the preview."
-  (if (or (eq action 'close)
-          (and (null action)
-               (get-buffer-window binky-preview-buffer)))
-      (let* ((buf binky-preview-buffer)
-             (win (get-buffer-window buf)))
-        (and (window-live-p win) (delete-window win))
-        (and (get-buffer buf) (kill-buffer buf)))
-	(with-current-buffer-window
-		binky-preview-buffer
-		(cons 'display-buffer-in-side-window
-			  `((side          . ,binky-preview-side)
-                (window-height . fit-window-to-buffer)
-                (window-width  . fit-window-to-buffer)))
-        nil
-      (let* ((total (mapcar #'binky--preview-propertize
-                            (binky--records :preview)))
-		     (back (and binky-back-record
-					    (binky--preview-propertize binky-back-record)))
-		     (dup (and back (rassoc (cdr back) (cdr total)))))
-        (erase-buffer)
-	    ;; insert header if non-nil
-	    (when (and (seq-some #'integerp (mapcar #'cdr (binky--preview-column)))
-			       binky-preview-show-header)
-	      (insert (binky--preview-header)))
-	    (when dup
-	      (setf (cdar dup)
-			    (concat (substring (cdar back) -1)
-					    (substring (cdar dup) 1))))
-        (dolist (record (if dup (cdr total) total))
-          (insert (binky--preview-extract record))))
-      (setq-local window-min-height 1)
-      (setq-local fit-window-to-buffer-horizontally t)
-      (setq-local cursor-in-non-selected-windows nil)
-	  (setq-local mode-line-format nil)
-	  (setq-local truncate-lines t)
-      (setq-local buffer-read-only t))))
+  (let ((prev-buf "*binky-preview*"))
+    (if (or (eq action 'close)
+            (and (null action)
+                 (get-buffer-window prev-buf)))
+        (let* ((win (get-buffer-window prev-buf)))
+          (and (window-live-p win) (delete-window win))
+          (and (get-buffer prev-buf) (kill-buffer prev-buf)))
+	  (with-current-buffer-window
+          prev-buf
+		  (cons 'display-buffer-in-side-window
+			    `((side          . ,binky-preview-side)
+                  (window-height . fit-window-to-buffer)
+                  (window-width  . fit-window-to-buffer)))
+          nil
+        (let* ((total (mapcar #'binky--preview-propertize
+                              (binky--records :preview)))
+		       (back (and binky-back-record
+					      (binky--preview-propertize binky-back-record)))
+		       (dup (and back (rassoc (cdr back) (cdr total)))))
+          (erase-buffer)
+	      ;; insert header if non-nil
+	      (when (and (seq-some #'integerp (mapcar #'cdr (binky--preview-column)))
+			         binky-preview-show-header)
+	        (insert (binky--preview-header)))
+	      (when dup
+	        (setf (cdar dup)
+			      (concat (substring (cdar back) -1)
+					      (substring (cdar dup) 1))))
+          (dolist (record (if dup (cdr total) total))
+            (insert (binky--preview-extract record))))
+        (setq-local window-min-height 1)
+        (setq-local fit-window-to-buffer-horizontally t)
+        (setq-local cursor-in-non-selected-windows nil)
+	    (setq-local mode-line-format nil)
+	    (setq-local truncate-lines t)
+        (setq-local buffer-read-only t)))))
 
 (defun binky--highlight (type)
   "Highlight the current line with TYPE related face."
