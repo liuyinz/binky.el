@@ -35,6 +35,7 @@
 (require 'cl-lib)
 (require 'seq)
 (require 'subr-x)
+(require 'let-alist)
 (require 'pulse)
 
 (declare-function ffip-project-root "find-file-in-project")
@@ -60,36 +61,34 @@ Messages are written into the *binky-debug* buffer."
   :type 'key
   :group 'binky)
 
-(defcustom binky-mark-back ?,
-  "Character used as mark to record last position before call `binky-jump'.
-Any self-inserting character between ! (33) - ~ (126) is allowed to used as
-mark.  Letters, digits, punctuation, etc.  If nil, disable the feature."
-  :type '(choice character (const :tag "Disable back mark" nil))
-  :group 'binky)
-
-(defcustom binky-mark-quit ?q
-  "Character used to quit the command and preview if exists.
+(defcustom binky-marks
+  `((back . ?,)
+    (quit . ?q)
+    (recent . (?1 ?2 ?3 ?4 ?5 ?6 ?7 ?8 ?9 ?0))
+    (manual . ,(remove ?q (number-sequence ?a ?z))))
+  "Characters used as mark in binky.
 Any self-inserting character between ! (33) - ~ (126) is allowed to used as
 mark.  Letters, digits, punctuation, etc.  If nil, disable the feature.
-
-\\[keyboard-quit] and <escape> are enable by default."
-  :type '(choice character (const :tag "Disable quit mark" nil))
-  :group 'binky)
-
-(defcustom binky-mark-recent
-  '(?1 ?2 ?3 ?4 ?5 ?6 ?7 ?8 ?9 ?0)
-  "List of printable characters to record recent used buffers.
-Any self-inserting character between ! (33) - ~ (126) is allowed to used as
-marks.  Letters, digits, punctuation, etc.  If nil, disable the feature."
-  :type '(choice (repeat (choice
-                          (character :tag "Printable character as mark")))
-                 (const :tag "Disable recent marks" nil))
+- back: character used as mark to record last position before call `binky-jump'
+- recent: list of printable characters to record recent used buffers
+- manual: list of printable characters to record selected buffers"
+  :type '(alist :key-type
+                (choice (const :tag "Quit binky commands" quit)
+                        (const :tag "Record last position" back)
+                        (const :tag "Record recent position" recent)
+                        (const :tag "Record selected position" manual))
+                :value-type
+                (choice (const :tag "Disable mark" nil)
+                        character
+                        (repeat (choice
+                                 (character :tag "Printable character")))))
+  :package-version '(binky . "1.5.0")
   :group 'binky)
 
 (defcustom binky-recent-sort-by 'recency
   "Sorting strategy for recent marked records."
   :type '(choice (const :tag "Sort by recency" recency)
-                 (Const :tag "Sort by frequency" frequency))
+                 (const :tag "Sort by frequency" frequency))
   :package-version '(binky . "1.2.0")
   :group 'binky)
 
@@ -422,12 +421,6 @@ record properties.")
 (defvar binky-current-type nil
   "Type of `last-input-event'.")
 
-(defvar binky-mark-legal nil
-  "List of legal marks used in all records.")
-
-(defvar binky-mark-manual nil
-  "List of legal marks used in manual records.")
-
 (defvar binky-message-alist
   '((illegal   . "is illegal")
     (overwrite . "is overwritten")
@@ -459,14 +452,8 @@ record properties.")
 
 ;;; Functions
 
-(defmacro binky--check (&rest body)
-  "Eval BODY forms only when binky mode is enabled."
-  `(if (bound-and-true-p binky-mode)
-       (progn ,@body)
-     (user-error "Binky mode is not enabled yet")))
-
 (defun binky--debug (msg &rest args)
-  "Print infomations into *binky-debug* if `binky-debug' is non-nil.
+  "Print information into *binky-debug* if `binky-debug' is non-nil.
 MSG and ARGS format is as same as `format' command."
   (when binky-debug
     (with-current-buffer "*binky-debug*"
@@ -485,6 +472,16 @@ Wait for DURATION seconds and then redisplay."
                                      'binky-preview-mark-manual)
            (alist-get status binky-message-alist))
   (sit-for (or duration 0.8) t))
+
+(defun binky--ensure ()
+  "Return non-nil if `binky-mode' is prepared."
+  (let-alist binky-marks
+    (let ((all (delete nil (append .recent .manual (list .back .quit)))))
+      (if (and (bound-and-true-p binky-mode)
+               (cl-every (lambda(c) (memq c (number-sequence ?a ?z))) .manual)
+               (equal (length all) (length (seq-uniq all))))
+          t
+        (user-error "Binky-marks is illegal!")))))
 
 (defun binky--marker (&optional position)
   "Return a marker at point or POSITION and record the buffer by binky.
@@ -582,10 +579,7 @@ With format (mark marker buffer name line project mode context file position)."
                 (goto-char marker)
                 (buffer-substring (line-beginning-position)
                                   (line-end-position)))
-              (cl-case mark
-                (binky-mark-back 'back)
-                (binky-mark-recent 'recent)
-                (t 'manual))
+              (binky--mark-type mark)
               marker
               buffer))
     record))
@@ -655,7 +649,7 @@ one argument."
     (run-hooks 'binky-back-record-update-hook))
   ;; update recent marked records
   (let ((orig (copy-alist binky-recent-records)))
-    (if-let ((marks (remove binky-mark-back binky-mark-recent)))
+    (if-let ((marks (alist-get 'recent binky-marks)))
         ;; remove current-buffer and last buffer if current-buffer if minibuffer
         (cl-loop for buf in (nthcdr (if (minibufferp (current-buffer)) 2 1)
                                     (buffer-list))
@@ -868,22 +862,6 @@ face `binky-preview-killed' is used instead."
                 (intern (concat "binky-preview-mark-"
                                 (symbol-name (binky--mark-type mark)))))))
 
-(defun binky--mark-legal ()
-  "Generate and return legal mark list for jumping."
-  (with-memoization binky-mark-legal
-    (seq-remove
-     (lambda (x) (memq x (list ?? ?\  binky-mark-quit nil)))
-     (seq-uniq
-      (cl-union (number-sequence ?a ?z)
-                (cons binky-mark-back binky-mark-recent))))))
-
-(defun binky--mark-manual ()
-  "Generate and return legal mark list for manual."
-  (with-memoization binky-mark-manual
-    (cl-set-difference (number-sequence ?a ?z)
-                       (append (list binky-mark-quit binky-mark-back)
-                               binky-mark-recent))))
-
 (defun binky--mark-type (mark &optional refresh)
   "Return type of MARK and update `binky-current-type' if REFRESH is non-nil.
 The `group' means to toggle whether records in groups and preview.
@@ -894,18 +872,19 @@ The `recent' means to jump to recent marked buffers.
 The `manual' means to operate on records manually.
 The `shift' means to delete existing mark.
 The `crtl' means to view record without jumping."
-  (let ((type (cond
-               ((equal mark ?\ ) 'group)
-               ((memq mark (cons binky-mark-quit '(?\C-\[ escape))) 'quit)
-               ((memq mark help-event-list) 'help)
-               ((equal mark binky-mark-back) 'back)
-               ((memq mark binky-mark-recent) 'recent)
-               ((memq mark (binky--mark-manual)) 'manual)
-               ((and (char-or-string-p mark)
-                     (memq (downcase mark) (binky--mark-manual))) 'shift)
-               ((equal (binky--mark-prefix mark) "C") 'ctrl)
-               ((equal (binky--mark-prefix mark) "M") 'alt)
-               (t 'illegal))))
+  (let ((type
+         (cond
+          ((equal mark ?\ ) 'group)
+          ((memq mark (cons (alist-get 'quit binky-marks) '(?\C-\[ escape))) 'quit)
+          ((memq mark help-event-list) 'help)
+          ((equal mark (alist-get 'back binky-marks)) 'back)
+          ((memq mark (alist-get 'recent binky-marks)) 'recent)
+          ((memq mark (alist-get 'manual binky-marks)) 'manual)
+          ((and (char-or-string-p mark)
+                (memq (downcase mark) (alist-get 'manual binky-marks))) 'shift)
+          ((equal (binky--mark-prefix mark) "C") 'ctrl)
+          ((equal (binky--mark-prefix mark) "M") 'alt)
+          (t 'illegal))))
     (and refresh (setq binky-current-type type))
     type))
 
@@ -919,7 +898,7 @@ Prefix would be \"C\" (ctrl) or \"M\" (alt)."
   (when-let* ((str (single-key-description mark t))
               ((string-match "\\(C\\|M\\)-\\(.\\)" str))
               ((memq (string-to-char (match-string 2 str))
-                     (binky--mark-legal))))
+                     (alist-get 'manual binky-marks))))
     (match-string 1 str)))
 
 (defun binky--mark-read (prompt &optional preview)
@@ -930,35 +909,35 @@ preview records at once.
 
 If `help-char' (or a member of `help-event-list') is pressed, display preview
 window regardless.  Press \\[keyboard-quit] to quit."
-  (binky--check
-   (setq binky-current-buffer (current-buffer))
-   (and preview (binky--preview 'redisplay))
-   (let ((timer (when (and (numberp binky-preview-delay)
-                           (null preview))
-		          (run-with-timer binky-preview-delay nil
-                                  (apply-partially #'binky--preview
-                                                   'redisplay)))))
-     (unwind-protect
-         (progn
-		   (while (memq (binky--mark-type (read-key prompt) 'refresh)
-                        '(help group illegal))
-             (cl-case binky-current-type
-               (help (binky--preview))
-               (group
-                (progn
-                  (setq binky-preview-in-groups (not binky-preview-in-groups))
-                  (binky--preview 'redisplay)
-                  (binky--message last-input-event 'toggle)))
-               (illegal
-                (progn
-                  (binky--message last-input-event 'illegal)))))
-		   (if (eq binky-current-type 'quit)
-               (keyboard-quit)
-             (downcase (string-to-char (nreverse (single-key-description
-                                                  last-input-event t))))))
-	   (and (timerp timer) (cancel-timer timer))
-       (when (or (eq binky-current-type 'quit) (null preview))
-         (binky--preview 'close))))))
+  (when (binky--ensure)
+    (setq binky-current-buffer (current-buffer))
+    (and preview (binky--preview 'redisplay))
+    (let ((timer (when (and (numberp binky-preview-delay)
+                            (null preview))
+		           (run-with-timer binky-preview-delay nil
+                                   (apply-partially #'binky--preview
+                                                    'redisplay)))))
+      (unwind-protect
+          (progn
+		    (while (memq (binky--mark-type (read-key prompt) 'refresh)
+                         '(help group illegal))
+              (cl-case binky-current-type
+                (help (binky--preview))
+                (group
+                 (progn
+                   (setq binky-preview-in-groups (not binky-preview-in-groups))
+                   (binky--preview 'redisplay)
+                   (binky--message last-input-event 'toggle)))
+                (illegal
+                 (progn
+                   (binky--message last-input-event 'illegal)))))
+		    (if (eq binky-current-type 'quit)
+                (keyboard-quit)
+              (downcase (string-to-char (nreverse (single-key-description
+                                                   last-input-event t))))))
+	    (and (timerp timer) (cancel-timer timer))
+        (when (or (eq binky-current-type 'quit) (null preview))
+          (binky--preview 'close))))))
 
 (defun binky--mark-add (mark)
   "Add (MARK . MARKER) into records."
@@ -983,7 +962,7 @@ window regardless.  Press \\[keyboard-quit] to quit."
     (binky--highlight 'add)
     (when-let (orig (binky--mark-get mark))
       ;; BUG pulse could not flash twice in one command,
-      ;; only show highlihgt overwritten line when it
+      ;; only show highlight overwritten line when it
       ;; do not use pulse style
       (unless binky-hl-use-pulse
         (save-excursion
@@ -1020,9 +999,10 @@ If optional arg OTHER is non-nil, jump to other window."
           (find-file (binky--prop record :file)))
         (goto-char (binky--prop record :position))
         (binky--highlight 'jump)
-        (when (and (characterp binky-mark-back)
+        (when (and (characterp (alist-get 'back binky-marks))
                    (not (equal (binky--distance last (point-marker)) 0)))
-          (setq binky-back-record (cons binky-mark-back (binky--marker last)))
+          (setq binky-back-record (cons (alist-get 'back binky-marks)
+                                        (binky--marker last)))
           (run-hooks 'binky-back-record-update-hook)))
     (binky--message mark 'non-exist)))
 
@@ -1111,10 +1091,10 @@ until \\[keyboard-quit] pressed."
   (interactive)
   (if-let ((state (get 'binky-recent-toggle 'state)))
       (progn
-        (setq binky-mark-recent state)
+        (setf (alist-get 'recent binky-marks) state)
         (put 'binky-recent-toggle 'state nil))
-    (put 'binky-recent-toggle 'state binky-mark-recent)
-    (setq binky-mark-recent nil))
+    (put 'binky-recent-toggle 'state (alist-get 'recent binky-marks))
+    (setf (alist-get 'recent binky-marks) nil))
   (binky--auto-update))
 
 ;;;###autoload
@@ -1142,7 +1122,7 @@ If BACKWARD is non-nil, jump to previous one."
 
 (defun binky-select-cache (file prompt &optional mustmatch)
   "Return binky cache FILE.
-Prompting with PROMPT amd MUSTMATCH if called interactively, otherwise return
+Prompting with PROMPT and MUSTMATCH if called interactively, otherwise return
 FILE or default cache."
   (if current-prefix-arg
       (read-file-name prompt binky-cache-directory nil mustmatch)
@@ -1150,7 +1130,7 @@ FILE or default cache."
 
 ;;;###autoload
 (defun binky-save (&optional file)
-  "Save manual records informations to FILE.
+  "Save manual records information to FILE.
 If optional argument FILE is nil, choose default file instead."
   (interactive)
   (when-let ((output (binky-select-cache file "[Binky] save records to: ")))
@@ -1166,7 +1146,7 @@ If optional argument FILE is nil, choose default file instead."
 
 ;;;###autoload
 (defun binky-restore (&optional file)
-  "Restore manual records informations from FILE.
+  "Restore manual records information from FILE.
 This command will overwrite `binky-manual-records' by force."
   (interactive)
   (when-let* ((input (binky-select-cache file "[Binky] read records from: " t))
