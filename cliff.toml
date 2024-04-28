@@ -31,7 +31,7 @@ body = """
     {%- for commit in commits %}
         {%- if commit.scope -%}
         {% else -%}
-            - {% if commit.breaking %} [**breaking**]{% endif %}\
+            - {% if commit.breaking %}[**breaking**] {% endif %}\
                 {{ commit.message }} - ([{{ commit.id | truncate(length=7, end="") }}]($REPO/commit/{{ commit.id }}))
         {% endif -%}
     {% endfor -%}
