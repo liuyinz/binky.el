@@ -246,7 +246,7 @@ If nil, disable the highlight feature."
   :group 'binky)
 
 (defcustom binky-cache-directory (locate-user-emacs-file "binky/cache/")
-  "Cache directory to store records of `binky-manual-list'."
+  "Cache directory to store records of `binky-manual-records'."
   :type 'directory
   :package-version '(binky . "1.4.1")
   :group 'binky)

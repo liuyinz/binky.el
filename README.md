@@ -82,7 +82,7 @@ Install with `M-x package-install` `RET` `binky` within Emacs.
 
 - `binky-jump` : jump to position of records
 
-- `binky-jump-other-window` : jump to position of records in other widnow
+- `binky-jump-other-window` : jump to position of records in other window
 
 - `binky-view` : view the position of records in other window without jumping
 
