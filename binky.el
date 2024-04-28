@@ -121,35 +121,12 @@ nil means to use `default-directory'.
   :type 'boolean
   :group 'binky)
 
-(defcustom binky-include-regexps
-  '("\\`\\*\\(scratch\\|info\\)\\*\\'")
-  "List of regexps for buffer name included in `binky-recent-records'.
-For example, buffer *scratch* is always included by default."
-  :type '(repeat regexp)
-  :package-version '(binky . "1.2.0")
-  :group 'binky)
-
-(defcustom binky-exclude-regexps
-  '("\\`\\(\\s-\\|\\*\\).*\\'")
-  "List of regexps for buffer name excluded from `binky-recent-records'.
-When a buffer name matches any of the regexps, it would not be record
-automatically unless it matches `binky-include-regexps'.  By default, all buffer
-names start with '*' or ' ' are excluded."
-  :type '(repeat regexp)
-  :group 'binky)
-
-(defcustom binky-exclude-modes
-  '(xwidget-webkit-mode)
-  "List of major modes which excluded from `binky-recent-records'."
-  :type '(repeat symbol)
-  :group 'binky)
-
-(defcustom binky-exclude-functions
-  (list #'minibufferp)
-  "List of predicates which buffers satisfy exclude from `binky-recent-records'.
+(defcustom binky-exclude-predicate
+  #'binky-default-exclude
+  "Predicates which buffer should be excluded from `binky-recent-records'.
 A predicate is a function with no arguments to check the `current-buffer'
 and that must return non-nil to exclude it."
-  :type '(repeat function)
+  :type 'function
   :group 'binky)
 
 (defcustom binky-preview-delay 0.5
@@ -515,21 +492,30 @@ Return nil if no project was found."
                 (car (with-no-warnings
                        (project-roots project)))))))))))
 
+(defvar binky-include-regexps
+  '("\\`\\*\\(scratch\\|info\\)\\*\\'")
+  "List of regexps for buffer name included in `binky-recent-records'.
+For example, buffer *scratch* is always included by default.")
+
+(defvar binky-exclude-regexps
+  '("\\`\\(\\s-\\|\\*\\).*\\'")
+  "List of regexps for buffer name excluded from `binky-recent-records'.
+When a buffer name matches any of the regexps, it would not be record
+automatically unless it matches `binky-include-regexps'.  By default, all buffer
+names start with '*' or ' ' are excluded.")
+
 (defun binky--regexp-match (lst)
   "Return non-nil if current buffer name match the LST."
   (and lst (string-match-p
             (mapconcat (lambda (x) (concat "\\(?:" x "\\)")) lst "\\|")
             (buffer-name))))
 
-(defun binky--exclude-regexp-p ()
-  "Return non-nil if current buffer name should be exclude."
-  (and (not (binky--regexp-match binky-include-regexps))
-       (binky--regexp-match binky-exclude-regexps)))
-
-(defun binky--exclude-mode-p ()
-  "Return non-nil if current buffer major mode should be exclude."
-  (and binky-exclude-modes
-       (memq mode-name binky-exclude-modes)))
+(defun binky-default-exclude ()
+  "Default predicate function to exclude buffers from `binky-recent-records'."
+  (or (minibufferp)
+      (memq major-mode '(xwidget-webkit-mode))
+      (and (not (binky--regexp-match binky-include-regexps))
+           (binky--regexp-match binky-exclude-regexps))))
 
 (defun binky--frequency-increase ()
   "Frequency increases by 1 in after each idle."
@@ -654,10 +640,7 @@ one argument."
         (cl-loop for buf in (nthcdr (if (minibufferp (current-buffer)) 2 1)
                                     (buffer-list))
                  if (with-current-buffer buf
-                      (and (not (seq-some #'funcall
-                                          (append binky-exclude-functions
-                                                  '(binky--exclude-mode-p
-                                                    binky--exclude-regexp-p))))
+                      (and (not (funcall binky-exclude-predicate))
                            (binky--marker)))
                  collect it into result
                  finally do
