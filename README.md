@@ -24,7 +24,7 @@ same mechanism like `point-to-register` but with an enhanced experience.
   - [Comparison](#comparison)
   - [Todo](#todo)
   - [FAQ](#faq)
-  - [License](#license)
+  - [Donate](#donate)
 
 <!-- markdown-toc end -->
 
@@ -180,8 +180,15 @@ Enjoy it.
 
   [format-all](https://github.com/lassik/emacs-format-all-the-code) formats buffer by overwriting it's entire content, all markers position would be change to position 1. Please use other formatters like [apheleia](https://github.com/radian-software/apheleia) instead.
 
-## License
+## Donate
 
-See [LICENSE](LICENSE).
+If you think the it's helpful for you, please consider paying a cup of coffee
+for me. Thank you! :smile:
+
+<a href="https://paypal.me/liuyinz" target="_blank">
+<img
+src="https://www.paypalobjects.com/digitalassets/c/website/marketing/apac/C2/logos-buttons/optimize/44_Grey_PayPal_Pill_Button.png"
+alt="PayPal" width="120" />
+</a>
 
 [melpa]: http://melpa.org/#/binky
