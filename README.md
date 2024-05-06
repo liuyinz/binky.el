@@ -6,8 +6,9 @@
 Jump between points like a rabbit !
 
 This package provides commands to jump between points in buffers and files.
-Marked position, last jump position and recent buffers are all supported in
-same mechanism like `point-to-register` but with an enhanced experience.
+Pin position, float position and last jump position are all supported in
+same mechanism like `point-to-register' and `register-to-point' but with an
+enhanced experience.
 
 <!-- markdown-toc start -->
 
@@ -34,7 +35,7 @@ same mechanism like `point-to-register` but with an enhanced experience.
 
 ![binky with preview](image/binky-preview.jpg)
 
-`?` for toggle preview manually, `q` or `escape` for quit, `SPC` to toggle in groups
+`?` for toggle preview manually, `C-g` or `escape` for quit, `SPC` to toggle in groups
 
 - Call `M-x binky-margin-mode`
 
@@ -86,22 +87,20 @@ Install with `M-x package-install` `RET` `binky` within Emacs.
 
 - `binky-view` : view the position of records in other window without jumping
 
-- `binky-recent-toggle` : toggle to enable or disable recent jump feature
-
 - `binky-binky` : one command to rule all
 
-  - press `j`, if record `j` exists, call `binky-jump`, otherwise call `binky-add`.
-  - press `J`, call `binky-delete`.
-  - press `alt-j`, call `binky-jump-other-window`.
-  - press `ctrl-j`, call `binky-view`.
+  - press `j`, if record `j` exists, call `binky-jump`, otherwise call `binky-add` to add pin record.
+  - press `J`, if record `J` exists, call `binky-jump`, otherwise call `binky-add` to add float record.
+  - press `ctrl-j`, call `binky-delete` to delete `j` record.
+  - press `alt-j`, call `binky-view` to see record `j` in other window.
 
   With `C-u` prefix, keep editing until quit
 
-- `binky-next-in-buffer` and `binky-previous-in-buffer`: jump between in current buffer
-
 - `binky-margin-mode` : toggle to enable or disable margin indicator feature
 
-- `binky-save` and `binky-restore`: save and restore manual records from file
+- `binky-next-in-buffer`/`binky-previous-in-buffer`: jump between in current buffer
+
+- `binky-save`/`binky-restore`: save and restore pin records from file
 
 ## Customization
 
@@ -110,7 +109,7 @@ Lots of options are provided, see customization part in file.
 ## Feature
 
 - Better UI experience than `register-to-point`, such as preview customization, jump highlight and margin indicator
-- Integration with buffers switch, and more sorting strategies are provided now and in future
+- Integration with buffers switch to record last point position as float position
 - Vim-like mark and jump style.
 
 ## Comparison
@@ -126,7 +125,7 @@ Lots of options are provided, see customization part in file.
 - Vim-like mark and jump
 - Flexible and customizable
 
-I have used dogears for several months, and it's great in most features except lack of [Vim-marks](https://vim.fandom.com/wiki/Using_marks) style jumping feature 
+I have used dogears for several months, and it's great in most features except lack of [Vim-marks](https://vim.fandom.com/wiki/Using_marks) style jumping feature
 which is top priority for me. While evil is too heavy, so I wrote this package to imitate parts of features.
 
 Enjoy it.
@@ -145,7 +144,7 @@ Enjoy it.
 
 ## FAQ
 
-- `binky-margin` conflicts with other packages like [flycheck](https://github.com/flycheck/flycheck), [diff-hl](https://github.com/dgutov/diff-hl), linum-mode(built-in), etc ?
+- `binky-margin` conflicts with other packages like flymake, [flycheck](https://github.com/flycheck/flycheck), [diff-hl](https://github.com/dgutov/diff-hl), linum-mode(built-in), etc ?
 
   `binky` supports only margin for now, so solutions here :
 

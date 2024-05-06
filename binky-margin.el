@@ -40,32 +40,39 @@ If nil, mark character would be used instead.  Recommendation as follow:
   :type '(choice string (const :tag "Use mark character" nil))
   :group 'binky-margin)
 
-(defun binky-margin--spec (mark)
-  "Return margin display string according to MARK if provided."
+(defun binky-margin--spec (record)
+  "Return margin display string according to RECORD if provided."
   (propertize " " 'display
               `((margin ,(intern (format "%s-margin" binky-indicator-side)))
-                ,(binky--mark-propertize mark binky-margin-string))))
+                ,(binky--mark-propertize record binky-margin-string))))
 
 (defun binky-margin--local-update (&optional update)
   "Remove margin indicators in current buffer and update if UPDATE is non-nil."
   ;; delete all overlays in buffer
   (save-restriction
     (widen)
-    (dolist (ov (overlays-in (point-min) (point-max)))
-      (when (overlay-get ov 'binky) (delete-overlay ov))))
+    (--each (overlays-in (point-min) (point-max))
+      (when (overlay-get it 'binky) (delete-overlay it))))
   (when update
-    (dolist (record (binky--filter :buffer (current-buffer)
-                                   (binky--records :indicator)))
-      (let* ((pos (binky--prop record :position))
+    (--each
+        (let* ((orig (binky--filter :buffer (eq it (current-buffer)) binky-records))
+               (sorted (-mapcat
+                        (lambda (type) (binky--filter :type (eq it type) orig))
+                        '(back pin float))))
+          ;; NOTE remove duplicate marks on same line to ensure priority of
+          ;; back > pin > float
+          (cl-remove-duplicates sorted :key (lambda (r) (binky--prop r :line))
+                                       :test 'equal
+                                       :from-end t))
+      (let* ((pos (binky--prop it :position))
              (ov (make-overlay pos pos)))
         (overlay-put ov 'binky t)
-        (overlay-put ov 'before-string
-                     (binky-margin--spec (binky--prop record :mark)))))))
+        (overlay-put ov 'before-string (binky-margin--spec it))))))
 
 (defun binky-margin--update ()
   "Remove and update margin indicators in all marked buffers if needed."
-  (dolist (buf (seq-filter #'binky--marked-p (buffer-list)))
-    (with-current-buffer buf
+  (--each (-filter #'binky--marked-p (buffer-list))
+    (with-current-buffer it
       ;; delete overlays
       (binky-margin--local-update
        (and (bound-and-true-p binky-mode)
@@ -92,20 +99,17 @@ You probably shouldn't use this function directly."
           (setq width-var 1))
       (setq width-var binky-margin-width-orig)
       (setq binky-margin-width-orig nil)))
-  (dolist (win (get-buffer-window-list))
-    (set-window-buffer win (current-buffer)))
+  (--each (get-buffer-window-list)
+    (set-window-buffer it (current-buffer)))
   (binky-margin--local-update binky-margin-local-mode))
 
 ;;;###autoload
 (define-global-minor-mode binky-margin-mode
   binky-margin-local-mode binky-margin-turn-on-maybe
   :group 'binky-margin
-  (let ((cmd (if binky-margin-mode #'add-hook #'remove-hook)))
-    (dolist (hook '(binky-mode-hook
-                    binky-manual-records-update-hook
-                    binky-recent-records-update-hook
-                    binky-back-record-update-hook))
-      (funcall cmd hook #'binky-margin--update))))
+  (--each '(binky-mode-hook binky-record-update-hook)
+    (funcall (if binky-margin-mode #'add-hook #'remove-hook)
+             it #'binky-margin--update)))
 
 (provide 'binky-margin)
 ;;; binky-margin.el ends here
