@@ -61,35 +61,18 @@ Messages are written into the *binky-debug* buffer."
   :type 'key
   :group 'binky)
 
-(defcustom binky-marks
-  `((back . ?,)
-    (quit . ?q)
-    (recent . (?1 ?2 ?3 ?4 ?5 ?6 ?7 ?8 ?9 ?0))
-    (manual . ,(remove ?q (number-sequence ?a ?z))))
+(defcustom binky-marks '((back . ?,) (quit . ?q))
   "Characters used as mark in binky.
 Any self-inserting character between ! (33) - ~ (126) is allowed to used as
-mark.  Letters, digits, punctuation, etc.  If nil, disable the feature.
+mark.  Letters, digits, punctuation, etc.
 - back: character used as mark to record last position before call `binky-jump'
-- recent: list of printable characters to record recent used buffers
-- manual: list of printable characters to record selected buffers"
+- recent: list of printable characters to record recent used buffers"
   :type '(alist :key-type
                 (choice (const :tag "Quit binky commands" quit)
-                        (const :tag "Record last position" back)
-                        (const :tag "Record recent position" recent)
-                        (const :tag "Record selected position" manual))
+                        (const :tag "Record last position" back))
                 :value-type
-                (choice (const :tag "Disable mark" nil)
-                        character
-                        (repeat (choice
-                                 (character :tag "Printable character")))))
+                (character :tag "Printable character"))
   :package-version '(binky . "1.5.0")
-  :group 'binky)
-
-(defcustom binky-recent-sort-by 'recency
-  "Sorting strategy for recent marked records."
-  :type '(choice (const :tag "Sort by recency" recency)
-                 (const :tag "Sort by frequency" frequency))
-  :package-version '(binky . "1.2.0")
   :group 'binky)
 
 (defcustom binky-project-detection 'auto
@@ -119,14 +102,6 @@ nil means to use `default-directory'.
 (defcustom binky-prune nil
   "If non-nil, delete related record when buffer was killed."
   :type 'boolean
-  :group 'binky)
-
-(defcustom binky-exclude-predicate
-  #'binky-default-exclude
-  "Predicates which buffer should be excluded from `binky-recent-records'.
-A predicate is a function with no arguments to check the `current-buffer'
-and that must return non-nil to exclude it."
-  :type 'function
   :group 'binky)
 
 (defcustom binky-preview-delay 0.5
@@ -182,12 +157,12 @@ Usually, `context' column should be placed at the end and not truncated."
   :type 'string
   :group 'binky)
 
-(defcustom binky-preview-order '(back manual recent)
+(defcustom binky-preview-order '(back float fixed)
   "Order which is applied to preview records."
   :type '(repeat (choice (const back)
-                         (const manual)
-                         (const recent)))
-  :package-version '(binky . "1.2.0")
+                         (const float)
+                         (const fixed)))
+  :package-version '(binky . "1.5.0")
   :group 'binky)
 
 (defcustom binky-preview-in-groups nil
@@ -242,7 +217,7 @@ If nil, disable the highlight feature."
   :package-version '(binky . "1.3.2")
   :group 'binky-faces)
 
-(defface binky-preview-mark-recent
+(defface binky-preview-mark-float
   '((t (:inherit (binky-preview bold)
         :foreground "#e27e8d")))
   "Face used to highlight the recent mark of record in preview."
@@ -256,7 +231,7 @@ If nil, disable the highlight feature."
   :package-version '(binky . "1.3.2")
   :group 'binky-faces)
 
-(defface binky-preview-mark-manual
+(defface binky-preview-mark-fixed
   '((t (:inherit (binky-preview bold)
         :foreground "#5ec4ff")))
   "Face used to highlight the mark of record in preview."
@@ -285,14 +260,14 @@ If nil, disable the highlight feature."
   :group 'binky-faces)
 
 (defface binky-preview-line
-  '((t (:inherit binky-preview-mark-manual
+  '((t (:inherit binky-preview-mark-fixed
         :bold nil)))
   "Face used to highlight the line number of record in preview."
   :package-version '(binky . "1.3.2")
   :group 'binky-faces)
 
 (defface binky-preview-mode
-  '((t (:inherit binky-preview-mark-recent
+  '((t (:inherit binky-preview-mark-float
         :bold nil)))
   "Face used to highlight the major mode of record in preview."
   :package-version '(binky . "1.3.2")
@@ -327,7 +302,7 @@ If nil, disable the highlight feature."
 
 (defface binky-hl-delete
   `((t (:inherit binky-hl
-        :background ,(face-foreground 'binky-preview-mark-recent))))
+        :background ,(face-foreground 'binky-preview-mark-float))))
   "Face used to highlight the line deleted from record."
   :package-version '(binky . "1.3.2")
   :group 'binky-faces)
@@ -341,7 +316,7 @@ If nil, disable the highlight feature."
 
 (defface binky-hl-jump
   `((t (:inherit binky-hl
-        :background ,(face-foreground 'binky-preview-mark-manual))))
+        :background ,(face-foreground 'binky-preview-mark-fixed))))
   "Face used to highlight the line jumped to."
   :package-version '(binky . "1.3.2")
   :group 'binky-faces)
@@ -356,38 +331,31 @@ If nil, disable the highlight feature."
 
 ;;; Variables
 
-(defvar binky-manual-records nil
+(defvar binky-records nil)
+
+(defvar binky-back-record nil
+  "Record of last position before `binky-jump', set and updated automatically.")
+
+(defvar binky-fixed-records nil
   "List of records (MARK . INFO) set and updated by manual.
 MARK is a lowercase letter between a-z.  INFO is a marker or a form in style of
 \(marker buffer name line project mode context file position) to store
 record properties.")
 
-(defvar binky-recent-records nil
+(defvar binky-float-records nil
   "List of records (MARK . MARKER), set and updated by recent buffers.")
-
-(defvar binky-back-record nil
-  "Record of last position before `binky-jump', set and updated automatically.")
-
-(defvar binky-frequency-timer nil
-  "Timer used to automatically increase buffer frequency.")
-
-(defvar binky-frequency-idle 3
-  "Number of seconds of idle time to wait before increasing frequency.")
-
-(defvar-local binky-frequency 0
-  "Frequency of current buffer.")
 
 (defvar-local binky-marked nil
   "If non-nil, the buffer was once recorded by binky.")
 
-(defvar binky-manual-records-update-hook nil
-  "Hook run when the variable `binky-manual-records' changes.")
-
-(defvar binky-recent-records-update-hook nil
-  "Hook run when the variable `binky-recent-records' changes.")
-
-(defvar binky-back-record-update-hook nil
-  "Hook run when the variable `binky-back-record' changes.")
+;; (defvar binky-fixed-records-update-hook nil
+;;   "Hook run when the variable `binky-manual-records' changes.")
+;;
+;; (defvar binky-float-records-update-hook nil
+;;   "Hook run when the variable `binky-recent-records' changes.")
+;;
+;; (defvar binky-back-record-update-hook nil
+;;   "Hook run when the variable `binky-back-record' changes.")
 
 (defvar-local binky-hl-overlay nil
   "Overlay used to highlight the line operated on.")
@@ -420,7 +388,6 @@ record properties.")
     (define-key map "b" 'binky-binky)
     (define-key map "s" 'binky-save)
     (define-key map "r" 'binky-restore)
-    (define-key map "t" 'binky-recent-toggle)
     (define-key map "n" 'binky-next-in-buffer)
     (define-key map "p" 'binky-previous-in-buffer)
     map))
@@ -450,15 +417,15 @@ Wait for DURATION seconds and then redisplay."
            (alist-get status binky-message-alist))
   (sit-for (or duration 0.8) t))
 
-(defun binky--ensure ()
-  "Return non-nil if `binky-mode' is prepared."
-  (let-alist binky-marks
-    (let ((all (delete nil (append .recent .manual (list .back .quit)))))
-      (if (and (bound-and-true-p binky-mode)
-               (cl-every (lambda(c) (memq c (number-sequence ?a ?z))) .manual)
-               (equal (length all) (length (seq-uniq all))))
-          t
-        (user-error "Binky-marks is illegal!")))))
+;; (defun binky--ensure ()
+;;   "Return non-nil if `binky-mode' is prepared."
+;;   (let-alist binky-marks
+;;     (let ((all (delete nil (append .recent .manual (list .back .quit)))))
+;;       (if (and (bound-and-true-p binky-mode)
+;;                (cl-every (lambda(c) (memq c (number-sequence ?a ?z))) .manual)
+;;                (equal (length all) (length (seq-uniq all))))
+;;           t
+;;         (user-error "Binky-marks is illegal!")))))
 
 (defun binky--marker (&optional position)
   "Return a marker at point or POSITION and record the buffer by binky.
@@ -492,39 +459,6 @@ Return nil if no project was found."
                 (car (with-no-warnings
                        (project-roots project)))))))))))
 
-(defvar binky-include-regexps
-  '("\\`\\*\\(scratch\\|info\\)\\*\\'")
-  "List of regexps for buffer name included in `binky-recent-records'.
-For example, buffer *scratch* is always included by default.")
-
-(defvar binky-exclude-regexps
-  '("\\`\\(\\s-\\|\\*\\).*\\'")
-  "List of regexps for buffer name excluded from `binky-recent-records'.
-When a buffer name matches any of the regexps, it would not be record
-automatically unless it matches `binky-include-regexps'.  By default, all buffer
-names start with '*' or ' ' are excluded.")
-
-(defun binky--regexp-match (lst)
-  "Return non-nil if current buffer name match the LST."
-  (and lst (string-match-p
-            (mapconcat (lambda (x) (concat "\\(?:" x "\\)")) lst "\\|")
-            (buffer-name))))
-
-(defun binky-default-exclude ()
-  "Default predicate function to exclude buffers from `binky-recent-records'."
-  (or (minibufferp)
-      (memq major-mode '(xwidget-webkit-mode))
-      (and (not (binky--regexp-match binky-include-regexps))
-           (binky--regexp-match binky-exclude-regexps))))
-
-(defun binky--frequency-increase ()
-  "Frequency increases by 1 in after each idle."
-  (cl-incf binky-frequency 1))
-
-(defun binky--frequency-get (marker)
-  "Return value of `binky-frequency' of buffer which MARKER points to."
-  (or (buffer-local-value 'binky-frequency (marker-buffer marker)) 0))
-
 (defun binky--distance (x y)
   "Return line distance between marker X and Y when in same buffer."
   (when (and (markerp x) (markerp y)
@@ -534,7 +468,7 @@ names start with '*' or ' ' are excluded.")
               (line-number-at-pos y 'absolute))))))
 
 (defun binky--duplicated-p (marker &optional distance)
-  "Return non-nil if MARKER equals with any record of `binky-manual-records'.
+  "Return non-nil if MARKER equals with any record of `binky-fixed-records'.
 When the line MARKER at has no larger distance with DISTANCE, return that
 record."
   (seq-find (lambda (x)
@@ -542,7 +476,7 @@ record."
                 (ignore-errors
                   (<= (binky--distance marker info)
                       (or distance binky-distance)))))
-            binky-manual-records))
+            binky-fixed-records))
 
 (defun binky--parse (record)
   "Parse RECORD and return list of properties.
@@ -593,23 +527,23 @@ With format (mark marker buffer name line project mode context file position)."
    (cl-case style
      (:union
       ;; orderless, non-uniq
-      (cons binky-back-record (append binky-manual-records
-                                      binky-recent-records)))
+      (cons binky-back-record (append binky-fixed-records
+                                      binky-float-records)))
      (:indicator
       ;; orderless, uniq
       (cons binky-back-record
             (mapcar (lambda (x)
                       (when-let ((marker (binky--prop x :marker)))
                         (eq marker (cdr binky-back-record))))
-                    (append binky-manual-records binky-recent-records))))
+                    (append binky-fixed-records binky-float-records))))
      (:preview
       ;; order, uniq
       (seq-reduce #'append
                   (mapcar
                    (lambda (x)
                      (alist-get x `((back   . ,(list binky-back-record))
-                                    (recent . ,binky-recent-records)
-                                    (manual . ,(binky--manual-preview)))))
+                                    (float . ,binky-float-records)
+                                    (fixed . ,(binky--fixed-preview)))))
                    binky-preview-order)
                   nil)))))
 
@@ -624,43 +558,25 @@ one argument."
                        (if (functionp pred)
                            `(,(binky--prop record prop))
                          `(,(binky--prop record prop) ,pred))))
-              (or alist binky-manual-records)))
+              (or alist binky-fixed-records)))
 
 (defun binky--auto-update ()
-  "Update `binky-recent-records' and `binky-back-record' automatically."
+  "Update `binky-float-records' and `binky-back-record' automatically."
   ;; delete back-record if buffer not exists
   (when (and binky-back-record
              (null (marker-buffer (cdr binky-back-record))))
     (setq binky-back-record nil)
     (run-hooks 'binky-back-record-update-hook))
-  ;; update recent marked records
-  (let ((orig (copy-alist binky-recent-records)))
-    (if-let ((marks (alist-get 'recent binky-marks)))
-        ;; remove current-buffer and last buffer if current-buffer if minibuffer
-        (cl-loop for buf in (nthcdr (if (minibufferp (current-buffer)) 2 1)
-                                    (buffer-list))
-                 if (with-current-buffer buf
-                      (and (not (funcall binky-exclude-predicate))
-                           (binky--marker)))
-                 collect it into result
-                 finally do
-                 (progn
-                   ;; delete recent marker on the same line
-                   (let ((uniq (seq-remove (lambda (m)
-                                             (binky--duplicated-p m 0))
-                                           result)))
-                     (setq binky-recent-records
-                           (seq-mapn
-                            (lambda (x y) (cons x y))
-                            marks
-                            (if (eq binky-recent-sort-by 'recency)
-                                uniq
-                              (seq-sort-by #'binky--frequency-get
-                                           #'>
-                                           uniq)))))))
-      (setq binky-recent-records nil))
-    (unless (equal orig binky-recent-records)
-      (run-hooks 'binky-recent-records-update-hook))))
+  ;; update float records
+  (let ((orig (copy-alist binky-float-records)))
+    (dolist (record binky-float-records)
+      (let ((mark (car record))
+            (marker (cdr record)))
+        (with-current-buffer (marker-buffer marker)
+          (unless (equal (point) (marker-position marker))
+            (setf (alist-get mark binky-float-records) (binky--marker))))))
+    (unless (equal orig binky-float-records)
+      (run-hooks 'binky-float-records-update-hook))))
 
 (defun binky--swap-out ()
   "Turn record from marker into list of properties when a buffer is killed."
@@ -668,17 +584,17 @@ one argument."
     (dolist (record to-swap)
       (if (and (buffer-file-name) (null binky-prune))
           (setcdr record (seq-subseq (binky--parse record) 1 9))
-        (delete record binky-manual-records)))
-    (run-hooks 'binky-manual-records-update-hook)))
+        (delete record binky-fixed-records)))
+    (run-hooks 'binky-fixed-records-update-hook)))
 
 (defun binky--swap-in ()
   "Turn record from list of infos into marker when a buffer is reopened."
   (when-let ((to-swap (binky--filter :file (buffer-file-name))))
     (dolist (record to-swap)
       (setcdr record (binky--marker (binky--prop record :position))))
-    (run-hooks 'binky-manual-records-update-hook)))
+    (run-hooks 'binky-fixed-records-update-hook)))
 
-(defun binky--manual-group (&optional name order)
+(defun binky--fixed-group (&optional name order)
   "Return alist of manual records in same buffer or file.
 NAME is a buffer name, if nil current buffer name is used.
 ORDER is `<' or `>' to sort records by position, otherwise no sorting."
@@ -687,19 +603,19 @@ ORDER is `<' or `>' to sort records by position, otherwise no sorting."
         (seq-sort-by (lambda (x) (binky--prop x :position)) order filtered)
       filtered)))
 
-(defun binky--manual-preview ()
+(defun binky--fixed-preview ()
   "Return manual alist for preview."
   (if binky-preview-in-groups
       (cl-loop for name in (seq-uniq (mapcar (lambda (x) (binky--prop x :name))
-                                             binky-manual-records))
-               for group = (binky--manual-group name #'<)
+                                             binky-fixed-records))
+               for group = (binky--fixed-group name #'<)
                if (not (get-buffer name))
                append group into killed
                else if (equal name (buffer-name binky-current-buffer))
                append group into same
                else append group into live
                finally return (append same live killed))
-    (reverse binky-manual-records)))
+    (reverse binky-fixed-records)))
 
 (defun binky--preview-horizontal-p ()
   "Return non-nil if binky preview buffer in horizontally."
@@ -892,35 +808,36 @@ preview records at once.
 
 If `help-char' (or a member of `help-event-list') is pressed, display preview
 window regardless.  Press \\[keyboard-quit] to quit."
-  (when (binky--ensure)
-    (setq binky-current-buffer (current-buffer))
-    (and preview (binky--preview 'redisplay))
-    (let ((timer (when (and (numberp binky-preview-delay)
-                            (null preview))
-		           (run-with-timer binky-preview-delay nil
-                                   (apply-partially #'binky--preview
-                                                    'redisplay)))))
-      (unwind-protect
-          (progn
-		    (while (memq (binky--mark-type (read-key prompt) 'refresh)
-                         '(help group illegal))
-              (cl-case binky-current-type
-                (help (binky--preview))
-                (group
-                 (progn
-                   (setq binky-preview-in-groups (not binky-preview-in-groups))
-                   (binky--preview 'redisplay)
-                   (binky--message last-input-event 'toggle)))
-                (illegal
-                 (progn
-                   (binky--message last-input-event 'illegal)))))
-		    (if (eq binky-current-type 'quit)
-                (keyboard-quit)
-              (downcase (string-to-char (nreverse (single-key-description
-                                                   last-input-event t))))))
-	    (and (timerp timer) (cancel-timer timer))
-        (when (or (eq binky-current-type 'quit) (null preview))
-          (binky--preview 'close))))))
+  ;; (when (binky--ensure)
+  (setq binky-current-buffer (current-buffer))
+  (and preview (binky--preview 'redisplay))
+  (let ((timer (when (and (numberp binky-preview-delay)
+                          (null preview))
+		         (run-with-timer binky-preview-delay nil
+                                 (apply-partially #'binky--preview
+                                                  'redisplay)))))
+    (unwind-protect
+        (progn
+		  (while (memq (binky--mark-type (read-key prompt) 'refresh)
+                       '(help group illegal))
+            (cl-case binky-current-type
+              (help (binky--preview))
+              (group
+               (progn
+                 (setq binky-preview-in-groups (not binky-preview-in-groups))
+                 (binky--preview 'redisplay)
+                 (binky--message last-input-event 'toggle)))
+              (illegal
+               (progn
+                 (binky--message last-input-event 'illegal)))))
+		  (if (eq binky-current-type 'quit)
+              (keyboard-quit)
+            (downcase (string-to-char (nreverse (single-key-description
+                                                 last-input-event t))))))
+	  (and (timerp timer) (cancel-timer timer))
+      (when (or (eq binky-current-type 'quit) (null preview))
+        (binky--preview 'close)))))
+;; )
 
 (defun binky--mark-add (mark)
   "Add (MARK . MARKER) into records."
@@ -952,7 +869,7 @@ window regardless.  Press \\[keyboard-quit] to quit."
           (goto-char (cdr orig))
           (binky--highlight 'delete)))
       (binky--message mark 'overwrite))
-    (setf (alist-get mark binky-manual-records) (binky--marker))
+    (setf (alist-get mark binky-fixed-records) (binky--marker))
     (run-hooks 'binky-manual-records-update-hook))))
 
 (defun binky--mark-delete (mark)
@@ -966,7 +883,7 @@ window regardless.  Press \\[keyboard-quit] to quit."
             (with-current-buffer (binky--prop record :name)
               (goto-char (binky--prop record :position))
               (binky--highlight 'delete))))
-	    (setq binky-manual-records (delq record binky-manual-records))
+	    (setq binky-fixed-records (delq record binky-fixed-records))
         (run-hooks 'binky-manual-records-update-hook))
     (binky--message mark 'non-exist)))
 
@@ -1069,24 +986,12 @@ until \\[keyboard-quit] pressed."
     (call-interactively #'binky-binky)))
 
 ;;;###autoload
-(defun binky-recent-toggle ()
-  "Toggle whether enable recent mark feature or not."
-  (interactive)
-  (if-let ((state (get 'binky-recent-toggle 'state)))
-      (progn
-        (setf (alist-get 'recent binky-marks) state)
-        (put 'binky-recent-toggle 'state nil))
-    (put 'binky-recent-toggle 'state (alist-get 'recent binky-marks))
-    (setf (alist-get 'recent binky-marks) nil))
-  (binky--auto-update))
-
-;;;###autoload
 (defun binky-next-in-buffer (&optional backward)
   "Jump to next manual record in current buffer if exists.
 If BACKWARD is non-nil, jump to previous one."
   (interactive)
   (if-let* ((order (if backward #'> #'<))
-            (sorted (binky--manual-group nil order)))
+            (sorted (binky--fixed-group nil order)))
       (if (and (equal (length sorted) 1)
                (equal (binky--distance (point-marker) (cdar sorted)) 0))
           (message "Point is on the only record in current buffer.")
@@ -1145,7 +1050,7 @@ This command will overwrite `binky-manual-records' by force."
                  record)
                into result
                finally do
-               (setq binky-manual-records result)))))
+               (setq binky-fixed-records result)))))
 
 
 ;;; Minor mode
@@ -1163,14 +1068,7 @@ you used and marked position."
                '((buffer-list-update-hook . binky--auto-update)
                  (kill-buffer-hook . binky--swap-out)
                  (find-file-hook . binky--swap-in))
-               do (funcall cmd hook func)))
-  (when (eq binky-recent-sort-by 'frequency)
-    (if binky-mode
-        (setq binky-frequency-timer
-              (run-with-idle-timer binky-frequency-idle
-			                       t #'binky--frequency-increase))
-      (cancel-timer binky-frequency-timer)
-      (setq binky-frequency-timer nil))))
+               do (funcall cmd hook func))))
 
 (provide 'binky)
 ;;; binky.el ends here
