@@ -1,5 +1,34 @@
 # Changelog
 
+## [2.0.0](https://github.com/liuyinz/binky.el/compare/v1.4.2..v2.0.0) - 2024-05-17
+
+### Bug Fixes
+
+- remove repeat-mode support - ([8711a7b](https://github.com/liuyinz/binky.el/commit/8711a7ba7b9045ee2788c023a2076559cd95feb6))
+- correct type of binky-command-prefix - ([5e13f58](https://github.com/liuyinz/binky.el/commit/5e13f5844aab20006301476c077cc0155a27d36a))
+- typos in readme - ([046b839](https://github.com/liuyinz/binky.el/commit/046b8392bae4f0c153e5909a7f7efca4d69c507d))
+
+### Documentation
+
+- add donate link - ([8b803aa](https://github.com/liuyinz/binky.el/commit/8b803aa13ceaee30ea57af4c68156c003033fa6f))
+
+### Features
+
+- add option binky-debug - ([d8d30ea](https://github.com/liuyinz/binky.el/commit/d8d30ea3d9ce6ccfd8b1254d8fabb86f3e44ed52))
+
+### Miscellaneous Chores
+
+- **(cliff)** adjust format - ([512c4f8](https://github.com/liuyinz/binky.el/commit/512c4f833e2e0b488bc1151a346ffd2908db4b21))
+- bump copyright years - ([9c0d99b](https://github.com/liuyinz/binky.el/commit/9c0d99b345dc310a31a187c52d092965a26de70a))
+
+### Refactoring
+
+- use with-memoization instead - ([b91e67d](https://github.com/liuyinz/binky.el/commit/b91e67d7b2d1641bcfd5a25cb74b14e97a956be9))
+- simplify binky-preview function - ([0ae75d1](https://github.com/liuyinz/binky.el/commit/0ae75d14f9ebef29c2083e71d3ea7931654656c6))
+- [**breaking**] update new option to customize binky marks - ([bef6370](https://github.com/liuyinz/binky.el/commit/bef63704dab53fb4e32605e099c9eb836e56811c))
+- [**breaking**] provide new exclude method - ([d571705](https://github.com/liuyinz/binky.el/commit/d5717053910f1d66f16c22a3d8834b43a507575e))
+- use dash library instead - ([b7e1b34](https://github.com/liuyinz/binky.el/commit/b7e1b34d20af171749e7ab0d91ba867ce938e089))
+
 ## [1.4.2](https://github.com/liuyinz/binky.el/compare/v1.4.1..v1.4.2) - 2023-12-04
 
 ### Documentation
