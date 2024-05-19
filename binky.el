@@ -376,12 +376,13 @@ Wait for DURATION seconds and then redisplay."
   (let ((mark (propertize (binky--key mark) 'face 'binky-preview-mark-pin))
         (msg (pcase status
                ('illegal    "is illegal")
+               ('backed     "can not be add or delete manualy")
                ('floated    "has already floated the current buffer")
                ('pinned     "has already pinned the current line")
                ('used       "has already been used")
                ('same-line  "already on the same line")
                ('non-exist  "doesn't exist")
-               ('toggle     "toggle preview in group"))))
+               ('group      "toggle preview in group"))))
     (message "Binky: %s %s." mark msg)
     (sit-for (or duration 0.8) t)))
 
@@ -681,7 +682,7 @@ face `binky-preview-killed' is used instead."
   "Return type of MARK and update `binky-current-type' if REFRESH is non-nil.
 The `group' means to toggle whether records in groups and preview.
 The `quit' means to quit the command and preview.
-The `toggle' means to preview records if not exist.
+The `toggle' means to show or hide preview window.
 The `back' means to jump back last position.
 The `float' means to operate on float marked buffers.
 The `pin' means to operate on pin marked records.
@@ -724,14 +725,13 @@ Press ESC key to quit."
 		  (while (memq (binky--mark-type (read-key prompt) 'refresh)
                        '(toggle group illegal))
             (pcase binky-current-type
+              ('illegal (binky--message last-input-event 'illegal))
               ('toggle (binky--preview))
-              ('illegal
-               (binky--message last-input-event 'illegal))
               ('group
                (progn
                  (setq binky-preview-in-groups (not binky-preview-in-groups))
                  (binky--preview 'redisplay)
-                 (binky--message last-input-event 'toggle)))))
+                 (binky--message last-input-event 'group)))))
 		  (if (eq binky-current-type 'quit)
               (keyboard-quit)
             (string-to-char (downcase (substring (binky--key last-input-event) -1)))))
@@ -744,6 +744,8 @@ Press ESC key to quit."
   (cond
    ((eq major-mode 'xwidget-webkit-mode)
     (message "%s is not allowed" major-mode))
+   ((eq mark binky-back-mark)
+    (binky--message mark 'backed))
    ((not (memq binky-current-type '(pin float)))
     (binky--message mark 'illegal))
    ((binky--record mark)
@@ -781,7 +783,9 @@ Press ESC key to quit."
             (setf (alist-get mark binky-records nil 'remove) nil)
             (run-hooks 'binky-record-update-hook))
         (binky--message mark 'non-exist))
-    (binky--message mark 'illegal)))
+    (if (eq mark binky-back-mark)
+        (binky--message mark 'backed)
+      (binky--message mark 'illegal))))
 
 (defun binky--mark-jump (mark &optional other)
   "Jump to point related to MARK in records.
@@ -880,7 +884,8 @@ until \\[keyboard-quit] pressed."
     ('ctrl-shift (binky--mark-delete mark))
     ('ctrl (binky--mark-jump mark t))
     ('alt (binky--mark-view mark))
-    (_ (if (binky--record mark)
+    (_ (if (or (binky--record mark)
+               (eq mark binky-back-mark))
 	       (binky--mark-jump mark)
          (binky--mark-add mark))))
   (when persist
