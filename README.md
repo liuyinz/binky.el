@@ -50,6 +50,7 @@ enhanced experience.
 ### dependencies
 
 - Emacs, version >= 26.3
+- [dash](https://github.com/magnars/dash.el)
 
 ### package
 
@@ -90,9 +91,10 @@ Install with `M-x package-install` `RET` `binky` within Emacs.
 - `binky-binky` : one command to rule all
 
   - press `j`, if record `j` exists, call `binky-jump`, otherwise call `binky-add` to add pin record.
-  - press `J`, if record `J` exists, call `binky-jump`, otherwise call `binky-add` to add float record.
-  - press `ctrl-j`, call `binky-delete` to delete `j` record.
-  - press `alt-j`, call `binky-view` to see record `j` in other window.
+  - press `J`, if record `j` exists, call `binky-jump`, otherwise call `binky-add` to add float record.
+  - press `ctrl-j`, call `binky-jump-other-window`.
+  - press `alt-j`, call `binky-view`.
+  - press `ctrl-shift-j`, call `binky-delete` to delete `j` record.
 
   With `C-u` prefix, keep editing until quit
 

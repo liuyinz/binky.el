@@ -366,11 +366,14 @@ MSG and ARGS format is as same as `format' command."
         (insert (apply #'format msg args))
         (newline)))))
 
+(defun binky--key (key)
+  "Return a pretty description of a character event KEY for binky."
+  (and key (single-key-description key t)))
+
 (defun binky--message (mark status &optional duration)
   "Echo information about MARK according to STATUS.
 Wait for DURATION seconds and then redisplay."
-  (let ((mark (propertize (single-key-description mark t)
-                          'face 'binky-preview-mark-pin))
+  (let ((mark (propertize (binky--key mark) 'face 'binky-preview-mark-pin))
         (msg (pcase status
                ('illegal    "is illegal")
                ('floated    "has already floated the current buffer")
@@ -668,45 +671,35 @@ redisplay the preview.  If it's nil, toggle the preview."
   "Return propertized string of mark character of RECORD.
 If REPLACE-STRING is non-nil, return it rather than mark.  If KILLED is non-nil,
 face `binky-preview-killed' is used instead."
-  (propertize (or replace-string (single-key-description (nth 0 record) t)) 'face
+  (propertize (or replace-string (binky--key (nth 0 record))) 'face
               (if killed
                   'binky-preview-killed
                 (intern (concat "binky-preview-mark-"
                                 (symbol-name (binky--prop record :type)))))))
 
-(defun binky--mark-prefix (mark)
-  "Return prefix of MARK if exists.
-Prefix would be \"C\" (ctrl) or \"M\" (alt)."
-  (save-match-data
-    (when-let* ((str (single-key-description mark t))
-                ((string-match "\\(C\\|M\\)-\\([a-z]\\)" str)))
-      (match-string 1 str))))
-
 (defun binky--mark-type (mark &optional refresh)
   "Return type of MARK and update `binky-current-type' if REFRESH is non-nil.
 The `group' means to toggle whether records in groups and preview.
 The `quit' means to quit the command and preview.
-The `help' means to preview records if not exist.
+The `toggle' means to preview records if not exist.
 The `back' means to jump back last position.
 The `float' means to operate on float marked buffers.
 The `pin' means to operate on pin marked records.
-The `crtl' means to view record without jumping.
-The `alt' means to delete existing mark."
-  (let ((type
-         (cond
-          ((equal mark ?\ ) 'group)
-          ((memq  mark '(?\C-\[ escape)) 'quit)
-          ((memq  mark help-event-list) 'help)
-          ((equal mark binky-back-mark) 'back)
-          ((and (characterp mark)
-                (string= "Ll" (get-char-code-property mark 'general-category)))
-           'pin)
-          ((and (characterp mark)
-                (string= "Lu" (get-char-code-property mark 'general-category)))
-           'float)
-          ((string= (binky--mark-prefix mark) "C") 'ctrl)
-          ((string= (binky--mark-prefix mark) "M") 'alt)
-          (t 'illegal))))
+The `crtl' means to jump to record in other window.
+The `alt' means to view record without jumping.
+The `ctrl-shift' means to delete existing mark."
+  (let* ((case-fold-search nil)
+         (type (pcase (binky--key mark)
+                 ("SPC" 'group)
+                 ("ESC" 'quit)
+                 ("TAB" 'toggle)
+                 ((pred (string= (binky--key binky-back-mark))) 'back)
+                 ((pred (string-match-p "^[a-z]$")) 'pin)
+                 ((pred (string-match-p "^[A-Z]$")) 'float)
+                 ((pred (string-match-p "^C-[a-z]$")) 'ctrl)
+                 ((pred (string-match-p "^M-[a-z]$")) 'alt)
+                 ((pred (string-match-p "^C-S-[a-z]$")) 'ctrl-shift)
+                 (_ 'illegal))))
     (and refresh (setq binky-current-type type))
     type))
 
@@ -716,9 +709,9 @@ Prompt with the string PROMPT and  may display a window listing existing
 records after `binky-preview-delay' seconds.  When PREVIEW is non-nil,
 preview records at once.
 
-If `help-char' (or a member of `help-event-list') is pressed, display preview
-window regardless.  Press \\[keyboard-quit] to quit."
-  ;; (when (binky--ensure)
+Press TAB key to toggle preview window display or not.
+Press SPC key to toggle preview window to display in groups or not.
+Press ESC key to quit."
   (setq binky-current-buffer (current-buffer))
   (and preview (binky--preview 'redisplay))
   (let ((timer (when (and (numberp binky-preview-delay)
@@ -729,21 +722,19 @@ window regardless.  Press \\[keyboard-quit] to quit."
     (unwind-protect
         (progn
 		  (while (memq (binky--mark-type (read-key prompt) 'refresh)
-                       '(help group illegal))
+                       '(toggle group illegal))
             (pcase binky-current-type
-              ('help (binky--preview))
+              ('toggle (binky--preview))
+              ('illegal
+               (binky--message last-input-event 'illegal))
               ('group
                (progn
                  (setq binky-preview-in-groups (not binky-preview-in-groups))
                  (binky--preview 'redisplay)
-                 (binky--message last-input-event 'toggle)))
-              ('illegal
-               (progn
-                 (binky--message last-input-event 'illegal)))))
+                 (binky--message last-input-event 'toggle)))))
 		  (if (eq binky-current-type 'quit)
               (keyboard-quit)
-            (string-to-char (downcase (nreverse (single-key-description
-                                                 last-input-event t))))))
+            (string-to-char (downcase (substring (binky--key last-input-event) -1)))))
 	  (and (timerp timer) (cancel-timer timer))
       (when (or (eq binky-current-type 'quit) (null preview))
         (binky--preview 'close)))))
@@ -868,8 +859,9 @@ If optional arg OTHER is non-nil, jump to other window."
 (defun binky-binky (mark &optional persist)
   "Add, delete or jump records with MARK in one command.
 
-If MARK prefix is ctrl+, then call `binky-delete'.
-If MARK prefix is alt+, then call `binky-view'.
+If MARK prefix is ctrl-shift, then call `binky-delete'.
+If MARK prefix is ctrl, then call `binky-jump-other-window'.
+If MARK prefix is alt, then call `binky-view'.
 If MARK prefix is nil and mark exists, then call `binky-jump'.
 If MARK prefix is nil and mark doesn't exist, then call `binky-add',
 if uppercase add a float mark, if lowercase add a pin mark.
@@ -885,7 +877,8 @@ until \\[keyboard-quit] pressed."
                       current-prefix-arg)
                      current-prefix-arg))
   (pcase binky-current-type
-    ('ctrl (binky--mark-delete mark))
+    ('ctrl-shift (binky--mark-delete mark))
+    ('ctrl (binky--mark-jump mark t))
     ('alt (binky--mark-view mark))
     (_ (if (binky--record mark)
 	       (binky--mark-jump mark)
