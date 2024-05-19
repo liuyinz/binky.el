@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.1.0](https://github.com/liuyinz/binky.el/compare/v2.0.0..v2.1.0) - 2024-05-19
+
+### Bug Fixes
+
+- clarify binky operation is illegal or back - ([5a03275](https://github.com/liuyinz/binky.el/commit/5a03275c5dbe537c91db02fabf9706c0fd9fa14d))
+- error when press ctrl-' and alt-' - ([fc3033b](https://github.com/liuyinz/binky.el/commit/fc3033be09cb7e234395f483d29199e4d69b8471))
+
+### Features
+
+- when call binky-jump-other-window, select existed window and buffer as possible - ([3407be5](https://github.com/liuyinz/binky.el/commit/3407be57768ff58b40434a883ed2501f8c1b4404))
+
+### Refactoring
+
+- function binky--mark-type - ([bcbb890](https://github.com/liuyinz/binky.el/commit/bcbb8909d0e1d0ca1867f243f89615ed34714836))
+
 ## [2.0.0](https://github.com/liuyinz/binky.el/compare/v1.4.2..v2.0.0) - 2024-05-17
 
 ### Bug Fixes
