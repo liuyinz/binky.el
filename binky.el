@@ -790,29 +790,42 @@ Press ESC key to quit."
 (defun binky--mark-jump (mark &optional other)
   "Jump to point related to MARK in records.
 If optional arg OTHER is non-nil, jump to other window."
-  (if-let ((record (binky--record mark))
-           (last (point-marker)))
-      (progn
-        (and other (switch-to-buffer-other-window (current-buffer)))
-        (let* ((target (binky--prop record :marker))
-               (pos (binky--prop record :position))
-               (buf (and (markerp target) (marker-buffer target))))
-          (if (binky--same-line last target)
-              (progn
-                (binky--highlight "warn")
-                (binky--message mark 'same-line))
-            (if buf
-                (unless (eq (current-buffer) buf)
-                  (switch-to-buffer buf))
-              (find-file (binky--prop record :file)))
-            (goto-char pos)
-            (binky--highlight "jump")
-            (when (characterp binky-back-mark)
-              (setf (alist-get binky-back-mark binky-records)
-                    (list 'back (binky--marker last)))
-              (run-hooks 'binky-record-update-hook)))))
+  (if-let* ((record (binky--record mark))
+            (last (point-marker)))
+      (let* ((target (binky--prop record :marker))
+             (pos (binky--prop record :position))
+             (buf (and (markerp target) (marker-buffer target))))
+        ;; if other is true, select window follow the order:
+        (if (and other buf)
+            ;; if non-seleted windows contain buf exists
+            (if-let ((win-list (delete (selected-window)
+                                       (get-buffer-window-list buf 'not-minibuf))))
+                (select-window
+                 ;; 1. goto window which contain target first if exists
+                 (or (--first (<= (window-start it) pos (window-end it)) win-list)
+                     ;; 2. goto window which display buf if exists
+                     (car win-list)))
+              ;; 3. switch to other window with buf
+              (switch-to-buffer-other-window buf))
+          ;; 4. if buf not live, switch to other window with current-buffer
+          (and other (switch-to-buffer-other-window (current-buffer)))
+          (if buf
+              (unless (eq (current-buffer) buf)
+                (switch-to-buffer buf))
+            (find-file (binky--prop record :file))))
+        (goto-char pos)
+        (if (binky--same-line last (or target (point-marker)))
+            (progn
+              (binky--highlight "warn")
+              (binky--message mark 'same-line))
+          (binky--highlight "jump")
+          (when (characterp binky-back-mark)
+            (setf (alist-get binky-back-mark binky-records)
+                  (list 'back (binky--marker last)))
+            (run-hooks 'binky-record-update-hook))))
     (binky--message mark 'non-exist)))
 
+;; TODO rewrite function as jump-other-window
 (defun binky--mark-view (mark)
   "View the point in other window according to MARK."
   (if-let* ((record (binky--record mark)))
