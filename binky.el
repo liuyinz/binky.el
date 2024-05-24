@@ -58,21 +58,6 @@
 Messages are written into the *binky-debug* buffer."
   :type 'boolean)
 
-(defcustom binky-command-prefix "C-c b"
-  "The prefix for all `binky' commands."
-  :package-version '(binky . "1.4.2")
-  :type 'key
-  :group 'binky)
-
-(defcustom binky-back-mark ?,
-  "Character used as back mark in binky.
-Any self-inserting character between ! (33) - ~ (126) is allowed to used as
-mark.  Letters, digits, punctuation, etc.
-- back: character used as mark to record last position before call `binky-jump'."
-  :type '(character :tag "Used as go back mark")
-  :package-version '(binky . "2.0.0")
-  :group 'binky)
-
 (defcustom binky-project-detection 'auto
   "How to detect the project root of binky records.
 nil means to use `default-directory'.
@@ -336,21 +321,6 @@ If nil, disable the highlight feature."
 (defvar-local binky-hl-overlay nil
   "Overlay used to highlight the line operated on.")
 
-(defvar binky-command-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map "a" 'binky-add)
-    (define-key map "d" 'binky-delete)
-    (define-key map "j" 'binky-jump)
-    (define-key map "w" 'binky-jump-other-window)
-    (define-key map "v" 'binky-view)
-    (define-key map "b" 'binky-binky)
-    (define-key map "s" 'binky-save)
-    (define-key map "r" 'binky-restore)
-    (define-key map "n" 'binky-next-in-buffer)
-    (define-key map "p" 'binky-previous-in-buffer)
-    map))
-(fset 'binky-command-map binky-command-map)
-
 
 ;;; Functions
 
@@ -375,7 +345,7 @@ MSG and ARGS format is as same as `format' command."
 Wait for DURATION seconds and then redisplay."
   (let ((mark (propertize (binky--key mark) 'face 'binky-preview-mark-pin))
         (msg (pcase status
-               ('illegal    "is illegal")
+               ('invalid    "is invalid")
                ('backed     "can not be add or delete manualy")
                ('floated    "has already floated the current buffer")
                ('pinned     "has already pinned the current line")
@@ -625,7 +595,7 @@ redisplay the preview.  If it's nil, toggle the preview."
                             (-concat (binky--filter :type (eq it 'back) binky-records)
                                      (binky--filter :type (eq it 'float) binky-records)
                                      (binky--pin-preview))))
-		       (back (and-let* ((back-r (binky--record binky-back-mark))
+		       (back (and-let* ((back-r (binky--record ?'))
                                 ((binky--preview-propertize back-r)))))
 		       (dup (and back (rassoc (cdr back) (cdr total)))))
 	      ;; insert header if non-nil
@@ -678,35 +648,37 @@ face `binky-preview-killed' is used instead."
                 (intern (concat "binky-preview-mark-"
                                 (symbol-name (binky--prop record :type)))))))
 
-(defun binky--mark-type (mark &optional refresh)
-  "Return type of MARK and update `binky-current-type' if REFRESH is non-nil.
-The `group' means to toggle whether records in groups and preview.
-The `quit' means to quit the command and preview.
+(defun binky--mark-type (mark)
+  "Return type of MARK and update `binky-current-type' if needed.
+The `group' means to toggle records preview in groups or not.
 The `toggle' means to show or hide preview window.
-The `back' means to jump back last position.
-The `float' means to operate on float marked buffers.
-The `pin' means to operate on pin marked records.
-The `crtl' means to jump to record in other window.
-The `alt' means to view record without jumping.
-The `ctrl-shift' means to delete existing mark."
+The `quit' means to quit the command.
+The `other' means to jump to record in other window.
+The `view' means to view record in other window without jumping.
+The `delete' means to delete next record.
+The `float' means to add float mark.
+The `valid' means to add or jump to mark.
+The `invalid' means mark is invalid."
   (let* ((case-fold-search nil)
          (type (pcase (binky--key mark)
                  ("SPC" 'group)
-                 ("ESC" 'quit)
                  ("TAB" 'toggle)
-                 ((pred (string= (binky--key binky-back-mark))) 'back)
-                 ((pred (string-match-p "^[a-z]$")) 'pin)
+                 ((or "ESC" "C-g") 'quit)
+                 (";" 'jump-other)
+                 ("," 'view)
+                 ("." 'delete)
                  ((pred (string-match-p "^[A-Z]$")) 'float)
-                 ((pred (string-match-p "^C-[a-z']$")) 'ctrl)
-                 ((pred (string-match-p "^M-[a-z']$")) 'alt)
-                 ((pred (string-match-p "^C-S-[a-z]$")) 'ctrl-shift)
-                 (_ 'illegal))))
-    (and refresh (setq binky-current-type type))
+                 ((pred (string-match-p "^[a-z']$")) 'valid)
+                 (_ 'invalid))))
+    (if (eq type 'valid)
+        (when (not (memq binky-current-type '(jump-other view delete float)))
+          (setq binky-current-type 'pin-or-jump))
+      (setq binky-current-type type))
     type))
 
-(defun binky--mark-read (prompt &optional preview)
+(defun binky--mark-read (action &optional preview)
   "Read and return a MARK possibly with preview.
-Prompt with the string PROMPT and  may display a window listing existing
+Prompt with the string ACTION and  may display a window listing existing
 records after `binky-preview-delay' seconds.  When PREVIEW is non-nil,
 preview records at once.
 
@@ -718,15 +690,18 @@ Press ESC key to quit."
   (let ((timer (when (and (numberp binky-preview-delay)
                           (null preview))
 		         (run-with-timer binky-preview-delay nil
-                                 (apply-partially #'binky--preview
-                                                  'redisplay)))))
+                                 (apply-partially #'binky--preview 'redisplay)))))
     (unwind-protect
         (progn
-		  (while (memq (binky--mark-type (read-key prompt) 'refresh)
-                       '(toggle group illegal))
+          (setq binky-current-type nil)
+		  (while (not (memq (binky--mark-type (read-key (concat "Binky " action " :")))
+                            '(quit float valid)))
             (pcase binky-current-type
-              ('illegal (binky--message last-input-event 'illegal))
               ('toggle (binky--preview))
+              ('jump-other (setq action "jump to other window"))
+              ('view (setq action "view"))
+              ('delete (setq action "delete"))
+              ('invalid (binky--message last-input-event 'invalid))
               ('group
                (progn
                  (setq binky-preview-in-groups (not binky-preview-in-groups))
@@ -734,20 +709,18 @@ Press ESC key to quit."
                  (binky--message last-input-event 'group)))))
 		  (if (eq binky-current-type 'quit)
               (keyboard-quit)
-            (string-to-char (downcase (substring (binky--key last-input-event) -1)))))
+            (downcase last-input-event)))
 	  (and (timerp timer) (cancel-timer timer))
       (when (or (eq binky-current-type 'quit) (null preview))
         (binky--preview 'close)))))
 
-(defun binky--mark-add (mark)
-  "Add (MARK . MARKER) into records."
+(defun binky--mark-add (mark &optional float-p)
+  "Add (MARK . MARKER) into records according to FLOAT-P."
   (cond
    ((eq major-mode 'xwidget-webkit-mode)
     (message "%s is not allowed" major-mode))
-   ((eq mark binky-back-mark)
+   ((eq mark ?')
     (binky--message mark 'backed))
-   ((not (memq binky-current-type '(pin float)))
-    (binky--message mark 'illegal))
    ((binky--record mark)
     (save-excursion
       (goto-char (nth 2 (binky--record mark)))
@@ -755,37 +728,36 @@ Press ESC key to quit."
     (binky--message mark 'used))
    (t
     (let ((lst (->> binky-records
-                    (binky--filter :type (eq it binky-current-type))
+                    (binky--filter :type (eq it (if float-p 'float 'pin)))
                     (binky--filter :buffer (eq it (current-buffer))))))
-      (if (and (eq binky-current-type 'float) lst)
+      (if (and float-p lst)
           (progn
             (binky--highlight "warn")
             (binky--message (caar lst) 'floated))
-        (if-let (((eq binky-current-type 'pin))
+        (if-let (((not float-p))
                  (dup (binky--filter :line (equal it (line-number-at-pos (point) t)) lst)))
             (progn
               (binky--highlight "warn")
               (binky--message (caar dup) 'pinned))
-          (binky--highlight (concat "add-" (symbol-name binky-current-type)))
-          (setf (alist-get mark binky-records) (list binky-current-type (binky--marker)))
+          (binky--highlight (concat "add-" (if float-p "float" "pin")))
+          (setf (alist-get mark binky-records)
+                (list (if float-p 'float 'pin) (binky--marker)))
           (run-hooks 'binky-record-update-hook)))))))
 
 (defun binky--mark-delete (mark)
   "Delete record relate to MARK from `binky-records'."
-  (if (memq (binky--mark-type mark) '(pin float))
-      (if-let ((record (binky--record mark)))
-          (progn
-            (when-let ((buf (binky--prop record :buffer)))
-              (save-excursion
-                (with-current-buffer buf
-                  (goto-char (binky--prop record :position))
-                  (binky--highlight "delete"))))
-            (setf (alist-get mark binky-records nil 'remove) nil)
-            (run-hooks 'binky-record-update-hook))
-        (binky--message mark 'non-exist))
-    (if (eq mark binky-back-mark)
-        (binky--message mark 'backed)
-      (binky--message mark 'illegal))))
+  (if (eq mark ?')
+      (binky--message mark 'backed)
+    (if-let ((record (binky--record mark)))
+        (progn
+          (when-let ((buf (binky--prop record :buffer)))
+            (save-excursion
+              (with-current-buffer buf
+                (goto-char (binky--prop record :position))
+                (binky--highlight "delete"))))
+          (setf (alist-get mark binky-records nil 'remove) nil)
+          (run-hooks 'binky-record-update-hook))
+      (binky--message mark 'non-exist))))
 
 (defun binky--mark-jump (mark &optional other)
   "Jump to point related to MARK in records.
@@ -819,10 +791,9 @@ If optional arg OTHER is non-nil, jump to other window."
               (binky--highlight "warn")
               (binky--message mark 'same-line))
           (binky--highlight "jump")
-          (when (characterp binky-back-mark)
-            (setf (alist-get binky-back-mark binky-records)
-                  (list 'back (binky--marker last)))
-            (run-hooks 'binky-record-update-hook))))
+          (setf (alist-get ?' binky-records)
+                (list 'back (binky--marker last)))
+          (run-hooks 'binky-record-update-hook)))
     (binky--message mark 'non-exist)))
 
 ;; TODO rewrite function as jump-other-window
@@ -843,67 +814,34 @@ If optional arg OTHER is non-nil, jump to other window."
 ;;; Commands
 
 ;;;###autoload
-(defun binky-add (mark)
-  "Add the record in current point with MARK."
-  (interactive (list (binky--mark-read "Binky add:")))
-  (binky--mark-add mark))
-
-;;;###autoload
-(defun binky-delete (mark)
-  "Delete the record MARK."
-  (interactive (list (binky--mark-read "Binky delete:")))
-  (binky--mark-delete mark))
-
-;;;###autoload
-(defun binky-jump (mark)
-  "Jump to point of record MARK."
-  (interactive (list (binky--mark-read "Binky jump:")))
-  (binky--mark-jump mark))
-
-;;;###autoload
-(defun binky-jump-other-window (mark)
-  "Jump to point of record MARK in other window."
-  (interactive (list (binky--mark-read "Binky jump in other window:")))
-  (binky--mark-jump mark t))
-
-;;;###autoload
-(defun binky-view (mark)
-  "View the point of record MARK in other window."
-  (interactive (list (binky--mark-read "Binky view:")))
-  (binky--mark-view mark))
-
-;;;###autoload
-(defun binky-binky (mark &optional persist)
-  "Add, delete or jump records with MARK in one command.
-
-If MARK prefix is ctrl-shift, then call `binky-delete'.
-If MARK prefix is ctrl, then call `binky-jump-other-window'.
-If MARK prefix is alt, then call `binky-view'.
-If MARK prefix is nil and mark exists, then call `binky-jump'.
-If MARK prefix is nil and mark doesn't exist, then call `binky-add',
-if uppercase add a float mark, if lowercase add a pin mark.
+(defun binky-binky (&optional persist)
+  "Add, delete or jump with marked records in one command.
+If prefix type is delete, then call `binky--mark-delete'.
+If prefix type is jump-other, then call `binky--mark-jump' to other window.
+If prefix type is view, then call `binky--mark-view'.
+If prefix is nil and mark exists, then call `binky--mark-jump', or call
+`binky--mark-add', when adding a mark, if it is upcase then add a float mark,
+or add a pin mark.
 
 Interactively, PERSIST is the prefix argument.  With no prefix argument,
 it works as same as single command.  With a prefix argument, repeating commands
 until \\[keyboard-quit] pressed."
-  (interactive (list (binky--mark-read
-                      (propertize "Binky binky:" 'face
-                                  (if current-prefix-arg
-                                      'binky-preview-header
-                                    'default))
-                      current-prefix-arg)
-                     current-prefix-arg))
-  (pcase binky-current-type
-    ('ctrl-shift (binky--mark-delete mark))
-    ('ctrl (binky--mark-jump mark t))
-    ('alt (binky--mark-view mark))
-    (_ (if (or (binky--record mark)
-               (eq mark binky-back-mark))
-	       (binky--mark-jump mark)
-         (binky--mark-add mark))))
-  (when persist
-    (binky--preview 'redisplay)
-    (call-interactively #'binky-binky)))
+  (interactive "P")
+  ;; TODO show persist info in prompt
+  (let ((mark (binky--mark-read "binky" persist)))
+    (pcase binky-current-type
+      ('delete (binky--mark-delete mark))
+      ('jump-other (binky--mark-jump mark t))
+      ('view (binky--mark-view mark))
+      ('float (binky--mark-add mark 'float))
+      (_ (if (or (binky--record mark)
+                 (eq mark ?'))
+	         (binky--mark-jump mark)
+           (binky--mark-add mark))))
+    (setq binky-current-type nil)
+    (when persist
+      (binky--preview 'redisplay)
+      (call-interactively #'binky-binky))))
 
 ;;;###autoload
 (defun binky-next-in-buffer (&optional backward)
@@ -978,7 +916,6 @@ This global minor mode allows you to jump easily between buffers
 you used and marked position."
   :group 'binky
   :global t
-  :keymap `((,(kbd binky-command-prefix) . binky-command-map))
   (--each '((buffer-list-update-hook . binky--auto-update)
             (kill-buffer-hook        . binky--swap-out)
             (find-file-hook          . binky--swap-in))

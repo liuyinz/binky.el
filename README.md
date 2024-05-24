@@ -78,23 +78,13 @@ Install with `M-x package-install` `RET` `binky` within Emacs.
   :hook (after-init-hook . (lambda () (binky-mode) (binky-margin-mode))))
 ```
 
-- `binky-add` : add current position to records
-
-- `binky-delete` : delete existed position from records
-
-- `binky-jump` : jump to position of records
-
-- `binky-jump-other-window` : jump to position of records in other window
-
-- `binky-view` : view the position of records in other window without jumping
-
 - `binky-binky` : one command to rule all
 
   - press `j`, if record `j` exists, call `binky-jump`, otherwise call `binky-add` to add pin record.
   - press `J`, if record `j` exists, call `binky-jump`, otherwise call `binky-add` to add float record.
-  - press `ctrl-j`, call `binky-jump-other-window`.
-  - press `alt-j`, call `binky-view`.
-  - press `ctrl-shift-j`, call `binky-delete` to delete `j` record.
+  - press `;j`, call `binky-jump-other-window`.
+  - press `,j`, call `binky-view`.
+  - press `.j`, call `binky-delete` to delete `j` record.
 
   With `C-u` prefix, keep editing until quit
 
