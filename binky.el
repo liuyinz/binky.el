@@ -38,6 +38,7 @@
 (require 'subr-x)
 (require 'pulse)
 (require 'pcase)
+(require 'crm)
 
 (require 'dash)
 
@@ -905,6 +906,19 @@ This command will overwrite pin records by force."
                      it)
                    (read (current-buffer))))
       (run-hooks 'binky-record-update-hook))))
+
+;;;###autoload
+(defun binky-clean (&optional all)
+  "Cleanup records in selected buffers, files or ALL positions."
+  (interactive "P")
+  (if (null all)
+      (let* ((target (-uniq (--map (binky--prop it :name) binky-records)))
+             (selected (completing-read-multiple "[Binky] clean records in: " target)))
+        (setq binky-records (--remove (member (binky--prop it :name) selected)
+                                      binky-records)))
+    (setq binky-records nil)
+    (message "Cleanup all binky records."))
+  (run-hooks 'binky-record-update-hook))
 
 
 ;;; Minor mode
