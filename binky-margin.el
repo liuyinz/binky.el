@@ -104,7 +104,7 @@ You probably shouldn't use this function directly."
   (binky-margin--local-update binky-margin-local-mode))
 
 ;;;###autoload
-(define-global-minor-mode binky-margin-mode
+(define-globalized-minor-mode binky-margin-mode
   binky-margin-local-mode binky-margin-turn-on-maybe
   :group 'binky-margin
   (--each '(binky-mode-hook binky-record-update-hook)
